@@ -29,17 +29,37 @@
     </div>
     <div class="gold" title="Золото"><span class="coin"></span><b id="goldNum">0</b></div>
   </header>
-  <div class="goal" id="goal"></div>
+  <button class="goal" id="goal"></button>
 
   <main>
-    <section class="panel" id="tab-home">
-      <div id="reportBox"></div>
+    <section class="panel" id="tab-map">
+      <div class="map" id="mapGrid"></div>
+      <div id="mapDetail"></div>
+    </section>
+
+    <section class="panel" id="tab-home" hidden>
       <div class="list" id="homeList"></div>
+      <h2>Кухня</h2>
+      <div class="list" id="cookList"></div>
+      <div class="list" id="bagList"></div>
+      <h2>Торговец</h2>
+      <div class="event" id="merchantBox"></div>
+      <div class="list" id="marketWares">
+        <h2>Продать рыбу</h2>
+        <div class="list" id="fishSell"></div>
+        <h2>Продать блюда</h2>
+        <div class="list" id="dishSell"></div>
+        <h2>Рецепты</h2>
+        <div class="list" id="recipeList"></div>
+        <h2>Снасти</h2>
+        <div class="list" id="gearList"></div>
+      </div>
       <h2>Прототип</h2>
       <div class="settings" id="settings"></div>
     </section>
 
     <section class="panel" id="tab-fish" hidden>
+      <div class="screen-head"><button class="btn quiet" id="back-map" data-tab="map">← Карта</button><span class="card-name" id="fishTitle">Рыбалка</span></div>
       <div class="waters" id="waters"></div>
       <button class="water" id="water" data-state="idle" aria-describedby="callout">
         <span class="wtop"><span>Забросы <b id="energyNum">20</b> / <span id="energyMax">20</span></span><span id="energyTimer"></span></span>
@@ -53,37 +73,14 @@
       <div class="bag" id="bag"></div>
       <div class="food" id="food"></div>
     </section>
-
-    <section class="panel" id="tab-cook" hidden>
-      <div class="list" id="cookList"></div>
-    </section>
-
-    <section class="panel" id="tab-map" hidden>
-      <div class="map" id="mapGrid"></div>
-      <div id="mapDetail"></div>
-    </section>
-
-    <section class="panel" id="tab-market" hidden>
-      <div class="event" id="merchantBox"></div>
-      <h2>Продать рыбу</h2>
-      <div class="list" id="fishSell"></div>
-      <h2>Продать блюда</h2>
-      <div class="list" id="dishSell"></div>
-      <h2>Рецепты</h2>
-      <div class="list" id="recipeList"></div>
-      <h2>Снасти</h2>
-      <div class="list" id="gearList"></div>
-    </section>
   </main>
 
-  <nav class="tabs" role="tablist">
-    <button role="tab" id="tabbtn-home" data-tab="home" aria-selected="true">Дом</button>
-    <button role="tab" id="tabbtn-fish" data-tab="fish" aria-selected="false">Рыбалка</button>
-    <button role="tab" id="tabbtn-cook" data-tab="cook" aria-selected="false">Кухня</button>
-    <button role="tab" id="tabbtn-map" data-tab="map" aria-selected="false">Карта</button>
-    <button role="tab" id="tabbtn-market" data-tab="market" aria-selected="false">Торговец</button>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button role="tab" id="tabbtn-map" data-tab="map" aria-selected="true">Карта</button>
+    <button role="tab" id="tabbtn-home" data-tab="home" aria-selected="false">Убежище</button>
   </nav>
 </div>
+<div class="layer" id="reportLayer" hidden><div class="layer-box" id="reportBox" role="dialog" aria-modal="true" aria-label="Отчёт о вылазке"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="logic.js"></script>

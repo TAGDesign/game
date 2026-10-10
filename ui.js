@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 const KEY = 'klev-v2';
 let state = newState();
-let tab = 'home';
+let tab = 'map';
 let sel = null;   // выбранная клетка карты
 
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
@@ -119,7 +119,7 @@ function hook(){
   sfx.catch(f.rare); buzz(f.rare ? [20, 30, 60] : 15);
   if (res.up){ sfx.up(); plusOne('fishBox'); }
   lockUntil = performance.now() + 260;
-  save(); renderHud(); renderWaters(); renderBag(); renderBadges();
+  save(); renderHud(); renderWaters(); renderBag();
   if (res.up) pop($('fishNum'));
 }
 function miss(text){
@@ -148,17 +148,32 @@ function renderHud(){
   $('cookNum').textContent = state.cooking;
   $('cookBar').style.width = ((state.cooking - 1) / (MAX_SKILL - 1) * 100) + '%';
   $('goldNum').textContent = state.gold;
-  $('goal').textContent = goalText();
+  renderGoal();
 }
 const PLACES = Object.keys(CELLS).length - 1;
-function goalText(now = Date.now()){
-  if (state.hero.status !== 'home') return heroStatus(now);
-  if (state.won) return 'Серия 1 пройдена. Маяк горит';
+// одна подсказка сверху вместо значков на вкладках: следующее действие и куда за ним идти
+function hint(now = Date.now()){
+  if (state.hero.status !== 'home') return {text: heroStatus(now)};
+  if (state.won) return {text: 'Серия 1 пройдена. Маяк горит'};
   const lesson = tutorialCell(state);
-  if (lesson) return `Начало: разведай ${CELLS[lesson].name.toLowerCase()} на карте`;
-  return `${SERIES.name}. Разведано ${state.opened.length - 1} из ${PLACES}`;
+  if (lesson) return {text: `Разведай ${CELLS[lesson].name.toLowerCase()}: нажми на него на карте`, go: 'map', cell: lesson};
+  if (state.armor.broken) return {text: 'Почини броню в убежище', go: 'home'};
+  if (RECIPES.some(r => state.known.includes(r.id) && canCook(state, r))) return {text: 'Приготовь улов на кухне в убежище', go: 'home'};
+  if (state.energy > 0 && !RECIPES.some(r => state.dishes[r.id] > 0)){
+    if (tab === 'fish') return {text: 'Налови рыбы, а потом приготовь её в убежище'};
+    const place = waterPlace(state.water) || waterPlace('pond');
+    return {text: `Налови рыбы: нажми на ${CELLS[place].name.toLowerCase()} на карте`, go: 'map', cell: place};
+  }
+  return {text: `Герой готов к вылазке. Разведано ${state.opened.length - 1} из ${PLACES}`, go: 'map'};
+}
+function renderGoal(now = Date.now()){
+  const h = hint(now), el = $('goal');
+  el.textContent = h.text;
+  if (h.go && (h.go !== tab || (h.cell && h.cell !== sel))){ el.dataset.go = h.go; el.dataset.goCell = h.cell || ''; el.disabled = false; }
+  else { delete el.dataset.go; el.disabled = true; }
 }
 function renderWaters(){
+  $('fishTitle').textContent = `${WATERS[state.water].name} · рыбалка`;
   $('waters').innerHTML = Object.entries(WATERS).map(([id, w]) =>
     waterOpen(state, id)
       ? `<button id="water-${id}" data-water="${id}" aria-pressed="${state.water === id}">${w.name}</button>`
@@ -225,8 +240,8 @@ function reportHtml(rep){
       <span class="meta">${dice}</span>
       ${rep.first ? `<span class="story">${cell.text}</span>` : ''}
       ${rep.first && cell.goal ? '<span class="card-name">Серия пройдена. Следующая серия откроет берег за морем.</span>' : ''}
-      <span class="meta">В рюкзаке прибавилось: ${rep.loot.gold} золота${rep.loot.ore ? ', руда ×' + rep.loot.ore : ''}${tro ? ', ' + tro : ''}</span>
-      ${rep.first && cell.gather && cell.gather.fish ? `<span class="meta"><b>Здесь теперь можно рыбачить. Нажми на это место на карте или открой вкладку «Рыбалка».</b></span>` : ''}
+      <span class="meta">В сумке прибавилось: ${rep.loot.gold} золота${rep.loot.ore ? ', руда ×' + rep.loot.ore : ''}${tro ? ', ' + tro : ''}</span>
+      ${rep.first && cell.gather && cell.gather.fish ? `<span class="meta"><b>Здесь теперь можно рыбачить. Нажми на это место на карте, чтобы порыбачить.</b></span>` : ''}
       <div class="row end"><button class="btn" id="report-ok" data-report="ok">Понятно</button></div></div>`;
   }
   if (rep.outcome === 'death')
@@ -295,7 +310,6 @@ function buffsHtml(){
   return b.length ? b.map(x => `<span class="need">${x}</span>`).join('') : '<span class="meta">Бафов нет. Их даёт еда с кухни.</span>';
 }
 function renderHome(){
-  $('reportBox').innerHTML = state.report ? reportHtml(state.report) : '';
   const p = heroPower(state, []), fr = state.fresh, groups = {};
   state.trophies.forEach(t => (groups[t.n] = groups[t.n] || {k:0, t:t.t}).k++);
   const trophies = Object.entries(groups).map(([n, g]) =>
@@ -311,11 +325,11 @@ function renderHome(){
       <span class="meta">Сила складывается так: ${p.parts.filter(x => x.v).map(x => x.label.toLowerCase() + ' ' + x.v).join(', ')}.${state.armor.broken ? ' Сломанная броня силы не даёт.' : ''}</span>
       <span class="meta" id="heroLine">${heroStatus()}</span>
       ${state.hero.status !== 'home' ? '<div class="bar"><i id="heroBar"></i></div>' : ''}
-      <div class="row end"><button class="btn" id="go-map" data-tab="map">К карте</button></div>
     </div>
-    ${slotDetail()}
+    ${slotDetail()}`;
+  $('bagList').innerHTML = `
     <div class="card">
-      <div class="card-head"><span class="card-name">Рюкзак</span><span class="stock">Руда ${state.ore} · Пыль ${state.dust}</span></div>
+      <div class="card-head"><span class="card-name">Сумка</span><span class="stock">Руда ${state.ore} · Пыль ${state.dust}</span></div>
       ${fr ? `<span class="meta"><b>С последней вылазки: +${fr.gold} золота${fr.ore ? ', руда ×' + fr.ore : ''}${fr.names.length ? ', ' + [...new Set(fr.names)].join(', ') : ''}</b></span>` : ''}
       ${trophies || '<span class="meta">Трофеев нет. Герой приносит их с вылазок, а распылённые трофеи дают пыль для чар.</span>'}
       ${state.trophies.length > 1 ? `<button class="btn wide" id="dust-all" data-dust="*">Распылить все</button>` : ''}
@@ -340,7 +354,7 @@ function defaultCell(){
 }
 function cellHtml(id){
   const c = CELLS[id], st = cellState(state, id);
-  if (st === 'home') return `<button class="cell home" id="cell-home" disabled>Дом</button>`;
+  if (st === 'home') return `<button class="cell home" id="cell-home" data-tab="home">Убежище</button>`;
   const here = state.hero.status === 'away' && state.hero.target === id;
   let top = '', sub = 'туман';
   if (st === 'open'){ top = c.name; sub = c.goal ? 'огонь горит' : c.gather && c.gather.fish ? 'рыбалка' : 'разведано'; }
@@ -396,6 +410,8 @@ function renderMarket(){
     ? `<span><b>Торговец здесь</b>, уйдёт через <span id="merchantTimer">${clock(m.endsAt - now)}</span></span><span>Платит вдвое за: ${wants}</span>`
     : `<span>Торговец придёт через <span id="merchantTimer">${clock(m.nextAt - now)}</span></span><span>Ему будут нужны: ${wants}. Заплатит вдвое.</span>`)
     + '<small>Продать улов и купить рецепты можно только при нём. В прототипе он приходит каждые 5 минут на 2 минуты.</small>';
+  $('marketWares').hidden = !m.present;
+  if (!m.present) return;
   const fish = Object.keys(FISH).filter(id => state.fish[id] > 0).map(id => sellRow('fish', id, FISH[id].name, state.fish[id], m));
   $('fishSell').innerHTML = fish.join('') || '<div class="empty">Садок пуст.</div>';
   const dishes = RECIPES.filter(r => state.dishes[r.id] > 0).map(r => sellRow('dish', r.id, r.name, state.dishes[r.id], m));
@@ -417,28 +433,21 @@ function renderMarket(){
       <span class="meta">${g.text}</span></div>`;
   }).join('');
 }
-function renderBadges(){
-  const m = merchant(state);
-  const cookable = RECIPES.some(r => state.known.includes(r.id) && canCook(state, r));
-  const set = (id, name, on, title) => $(id).innerHTML = name + (on ? `<span class="badge" title="${title}"></span>` : '');
-  set('tabbtn-home', 'Дом', !!state.report || state.armor.broken || state.trophies.length > 0, 'Дома есть дела');
-  set('tabbtn-cook', 'Кухня', cookable, 'Есть что приготовить');
-  const fb = $('tabbtn-fish'), canFish = fishingOpen(state);
-  fb.setAttribute('aria-disabled', !canFish); fb.title = canFish ? '' : 'Сначала разведай пруд на карте';
-  set('tabbtn-map', 'Карта', state.hero.status === 'home' && !state.won, 'Герой готов к вылазке');
-  set('tabbtn-market', 'Торговец', m.present, 'Торговец здесь');
+function renderReport(){
+  $('reportLayer').hidden = !state.report;
+  $('reportBox').innerHTML = state.report ? reportHtml(state.report) : '';
 }
-function renderAll(){ renderHud(); renderHome(); renderWaters(); renderWaterInfo(); renderBag(); renderCook(); renderMap(); renderMarket(); renderBadges(); }
+function renderAll(){ renderHud(); renderHome(); renderWaters(); renderWaterInfo(); renderBag(); renderCook(); renderMap(); renderMarket(); renderReport(); }
 
-const TABS = ['home', 'fish', 'cook', 'map', 'market'];
+const TABS = ['map', 'home', 'fish'];
 function showTab(t){
   if (t === 'fish' && !fishingOpen(state)){ t = 'map'; toast('Сначала разведай пруд на карте'); }
   if (tab === 'fish' && t !== 'fish') stopFishing();
   tab = t;
-  for (const id of TABS){
-    $('tab-' + id).hidden = id !== t;
-    $('tabbtn-' + id).setAttribute('aria-selected', id === t);
-  }
+  for (const id of TABS) $('tab-' + id).hidden = id !== t;
+  for (const id of ['map', 'home']) $('tabbtn-' + id).setAttribute('aria-selected', id === t);
+  $('tabs').hidden = t === 'fish';   // занятие на весь экран, назад — стрелкой
+
   renderAll();
 }
 
@@ -517,7 +526,7 @@ function doSet(what){
   }
   else {
     delete box.dataset.open;
-    if (what === 'reset-yes'){ const sound = state.sound; state = newState(); state.sound = sound; sel = null; save(); stopFishing(); showTab('home'); toast('Начинаем серию заново'); }
+    if (what === 'reset-yes'){ const sound = state.sound; state = newState(); state.sound = sound; sel = null; save(); stopFishing(); showTab('map'); toast('Начинаем серию заново'); }
     else renderHome();
   }
 }
@@ -528,6 +537,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   const d = b.dataset;
   if (d.tab) showTab(d.tab);
+  else if (d.go){ if (d.goCell) sel = d.goCell; showTab(d.go); }
   else if (d.cook) doCook(d.cook);
   else if (d.eat) doEat(d.eat);
   else if (d.sell) doSell(d.sell);
@@ -554,7 +564,7 @@ function tick(){
   let ev, changed = false;
   while ((ev = resolveHero(state, now))){
     changed = true;
-    if (ev === 'win'){ sfx.catch(true); toast('Герой вернулся с добычей. Загляни домой'); }
+    if (ev === 'win'){ sfx.catch(true); toast('Герой вернулся с добычей'); }
     else if (ev === 'death'){ sfx.miss(); buzz([60, 40, 60]); toast('Герой погиб. Броня сломана, бафы сброшены'); }
     else if (ev === 'retreat'){ sfx.miss(); toast('Герой отступил и вернулся ни с чем'); }
     else toast('Герой снова дома');
@@ -569,7 +579,7 @@ function tick(){
   if (changed){ save(); renderAll(); }
   renderWaterInfo();
   if (state.energy !== lastEnergy){ lastEnergy = state.energy; save(); }
-  $('goal').textContent = goalText(now);
+  renderGoal(now);
   const line = $('heroLine'); if (line) line.textContent = heroStatus(now);
   const bar = $('heroBar'), h = state.hero;
   if (bar && h.until) bar.style.width = Math.min(100, (now - h.start) / (h.until - h.start) * 100) + '%';

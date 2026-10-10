@@ -8,7 +8,7 @@ img{max-width:100%}
 :root{
   --bg:#E4EBE9; --surface:#F5F8F7; --ink:#12262A; --muted:#536A6E; --line:#C6D3D0;
   --water-a:#3C9198; --water-b:#1B5A65; --on-water:#F1FBFA; --fishbar:#2B858E; --water-track:rgba(255,255,255,.22);
-  --float:#DD4326; --gold:#A87A12;
+  --float:#DD4326; --gold:#A87A12; --scrim:rgba(18,38,42,.45);
   --q-orange:#DB6E12; --q-yellow:#C9A30F; --q-green:#3E9B4C; --q-grey:#8B9799;
   --f-karas:#8C9966; --f-okun:#5A8F47; --f-karp:#D6A21C; --f-forel:#C7788A; --f-shchuka:#3F7058; --f-osetr:#5C7396;
   --f-sig:#8FA9B8; --f-sudak:#7A7FA8; --f-taimen:#B5553F;
@@ -19,7 +19,7 @@ img{max-width:100%}
   :root:not([data-theme="light"]){
     --bg:#0C181C; --surface:#14262B; --ink:#E3EEEC; --muted:#8CA3A5; --line:#25393E;
     --water-a:#17525C; --water-b:#0A2A33; --on-water:#E9F7F6; --fishbar:#45ABB5; --water-track:rgba(255,255,255,.22);
-    --float:#FF6747; --gold:#E0B548;
+    --float:#FF6747; --gold:#E0B548; --scrim:rgba(0,0,0,.6);
     --q-orange:#F08A33; --q-yellow:#E2BE3A; --q-green:#5DBB6B; --q-grey:#74878A;
     color-scheme:dark;
   }
@@ -27,7 +27,7 @@ img{max-width:100%}
 :root[data-theme="dark"]{
   --bg:#0C181C; --surface:#14262B; --ink:#E3EEEC; --muted:#8CA3A5; --line:#25393E;
   --water-a:#17525C; --water-b:#0A2A33; --on-water:#E9F7F6; --fishbar:#45ABB5; --water-track:rgba(255,255,255,.22);
-  --float:#FF6747; --gold:#E0B548;
+  --float:#FF6747; --gold:#E0B548; --scrim:rgba(0,0,0,.6);
   --q-orange:#F08A33; --q-yellow:#E2BE3A; --q-green:#5DBB6B; --q-grey:#74878A;
   color-scheme:dark;
 }
@@ -59,7 +59,9 @@ button:disabled{cursor:default}
 @keyframes pop{40%{transform:scale(1.35)}}
 .plus{position:absolute;right:34px;top:4px;font-family:var(--display);font-size:12px;color:var(--float);pointer-events:none;animation:rise .9s ease forwards}
 @keyframes rise{to{transform:translateY(-12px);opacity:0}}
-.goal{font-size:13px;color:var(--muted);min-height:1.35em}
+.goal{font-size:13px;color:var(--muted);min-height:1.35em;text-align:left}
+.goal[data-go]{background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 12px;font-weight:500}
+.goal[data-go]::after{content:" →";color:var(--muted)}
 
 /* Panels */
 main{flex:1;min-height:0;display:flex;flex-direction:column}
@@ -184,13 +186,19 @@ h2{font-family:var(--display);font-weight:500;font-size:13px;margin:6px 0 0;colo
 .cell[aria-pressed="true"]{outline:2px solid var(--float);outline-offset:1px}
 
 /* Tabs */
-.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);margin-inline:-16px;padding-inline:6px}
+.tabs{display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line);margin-inline:-16px;padding-inline:6px}
 .tabs button{padding:14px 0 16px;font-size:12px;color:var(--muted);position:relative;white-space:nowrap}
 .tabs button[aria-selected="true"]{color:var(--ink);font-weight:600}
 .tabs button[aria-selected="true"]::before{content:"";position:absolute;left:22%;right:22%;top:-1px;height:2px;background:var(--ink)}
 .tabs button[aria-disabled="true"]{opacity:.45}
 .tabs .badge{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--float);margin-left:3px;vertical-align:middle}
 
+/* экран занятия: шапка со стрелкой назад */
+.screen-head{display:flex;align-items:center;gap:10px}
+.screen-head .btn{padding-inline:0}
+/* отчёт о вылазке всплывает поверх любого экрана */
+.layer{position:fixed;inset:0;z-index:10;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.layer-box{width:100%;max-width:448px;max-height:85%;overflow-y:auto}
 .toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);
   padding:9px 14px;border-radius:10px;font-size:13px;width:max-content;max-width:calc(100% - 32px);text-align:center;pointer-events:none;opacity:0;transition:opacity .2s}
 .toast.on{opacity:1}

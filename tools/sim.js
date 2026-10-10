@@ -1,9 +1,8 @@
 // Сценарные проверки правил и прогон серии ботом до зажжённого маяка.
-// Запуск: node tools/sim.js  (читает блок между LOGIC-START и LOGIC-END из index.html)
+// Запуск: node tools/sim.js  (читает правила игры из logic.js)
 const fs = require('fs');
 const path = require('path');
-const html = fs.readFileSync(process.argv[2] || path.join(__dirname, '..', 'index.html'), 'utf8');
-const code = html.split('/*LOGIC-START*/')[1].split('/*LOGIC-END*/')[0];
+const code = fs.readFileSync(process.argv[2] || path.join(__dirname, '..', 'logic.js'), 'utf8');
 const names = 'MAX_SKILL,MAX_ENERGY,REGEN_MS,MERCHANT_EVERY,MERCHANT_STAY,RESPAWN_MS,PACK_SIZE,ENCH_COST,MAX_ENCH,REPAIR_ORE,REPAIR_GOLD,FISH,WATERS,RECIPES,GEAR,CELLS,TIERS,CHANCE,newState,recipeById,colorOf,waterOpen,slipChance,merchant,callMerchant,regen,spendCast,rollFish,landFish,canCook,cook,eat,priceOf,sell,recipeStatus,buyRecipe,buyGear,cellState,prunePack,packLeft,heroPower,tripChance,deathRisk,depart,resolveHero,disenchant,enchant,repair';
 const L = new Function(code + `; return {${names}};`)();
 const ok = (cond, msg) => { if (!cond) { console.log('ПРОВАЛ:', msg); process.exitCode = 1; } };

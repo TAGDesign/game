@@ -1,0 +1,200 @@
+/* базовый сброс: раньше его добавлял хостинг, где лежал прототип */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* Layout: one phone-height column. Two skills and gold on top, the current place fills the middle, tabs sit under the thumb. */
+:root{
+  --bg:#E4EBE9; --surface:#F5F8F7; --ink:#12262A; --muted:#536A6E; --line:#C6D3D0;
+  --water-a:#3C9198; --water-b:#1B5A65; --on-water:#F1FBFA; --fishbar:#2B858E; --water-track:rgba(255,255,255,.22);
+  --float:#DD4326; --gold:#A87A12;
+  --q-orange:#DB6E12; --q-yellow:#C9A30F; --q-green:#3E9B4C; --q-grey:#8B9799;
+  --f-karas:#8C9966; --f-okun:#5A8F47; --f-karp:#D6A21C; --f-forel:#C7788A; --f-shchuka:#3F7058; --f-osetr:#5C7396;
+  --f-sig:#8FA9B8; --f-sudak:#7A7FA8; --f-taimen:#B5553F;
+  --display:'Unbounded','Trebuchet MS',system-ui,sans-serif;
+  --body:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C181C; --surface:#14262B; --ink:#E3EEEC; --muted:#8CA3A5; --line:#25393E;
+    --water-a:#17525C; --water-b:#0A2A33; --on-water:#E9F7F6; --fishbar:#45ABB5; --water-track:rgba(255,255,255,.22);
+    --float:#FF6747; --gold:#E0B548;
+    --q-orange:#F08A33; --q-yellow:#E2BE3A; --q-green:#5DBB6B; --q-grey:#74878A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C181C; --surface:#14262B; --ink:#E3EEEC; --muted:#8CA3A5; --line:#25393E;
+  --water-a:#17525C; --water-b:#0A2A33; --on-water:#E9F7F6; --fishbar:#45ABB5; --water-track:rgba(255,255,255,.22);
+  --float:#FF6747; --gold:#E0B548;
+  --q-orange:#F08A33; --q-yellow:#E2BE3A; --q-green:#5DBB6B; --q-grey:#74878A;
+  color-scheme:dark;
+}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.35;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:2px solid var(--float);outline-offset:2px}
+button:disabled{cursor:default}
+
+.app{height:100%;max-width:480px;margin:0 auto;padding-inline:16px;padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
+
+/* HUD */
+.hud{display:flex;align-items:flex-end;gap:12px}
+.skill{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;gap:5px}
+.skill-row{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.label{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.skill-num{font-family:var(--display);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.skill-num b{display:inline-block;font-weight:700}
+.skill-num i{font-style:normal;font-size:11px;color:var(--fishbar);margin-left:3px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:3px;transition:width .35s ease}
+#fishBar{background:var(--fishbar)} #cookBar{background:var(--float)} #heroBar{background:var(--fishbar)}
+.gold{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:700;font-size:17px;line-height:1;padding-bottom:9px;font-variant-numeric:tabular-nums}
+.coin{width:13px;height:13px;border-radius:50%;background:var(--gold);flex:none}
+.gold b{display:inline-block}
+.pop{animation:pop .32s ease}
+@keyframes pop{40%{transform:scale(1.35)}}
+.plus{position:absolute;right:34px;top:4px;font-family:var(--display);font-size:12px;color:var(--float);pointer-events:none;animation:rise .9s ease forwards}
+@keyframes rise{to{transform:translateY(-12px);opacity:0}}
+.goal{font-size:13px;color:var(--muted);min-height:1.35em}
+
+/* Panels */
+main{flex:1;min-height:0;display:flex;flex-direction:column}
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:12px}
+
+/* Water switch */
+.waters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.waters button{padding:8px 6px;border-radius:10px;border:1px solid var(--line);font-size:13px;color:var(--muted);text-align:center;line-height:1.2}
+.waters button small{display:block;font-size:11px}
+.waters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+
+/* The water */
+.water{flex:1;min-height:230px;position:relative;width:100%;border-radius:20px;overflow:hidden;color:var(--on-water);--bx:50%;--by:52%;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 22px,rgba(255,255,255,.05) 22px 23px),
+    linear-gradient(180deg,var(--water-a),var(--water-b));
+  user-select:none;-webkit-user-select:none}
+.wtop{position:absolute;left:16px;right:16px;top:12px;display:flex;justify-content:space-between;gap:10px;font-size:13px;text-align:left}
+.wtop b{font-family:var(--display);font-size:15px;font-variant-numeric:tabular-nums}
+.wnote{position:absolute;left:16px;right:16px;top:38px;font-size:12px;text-align:left;opacity:.85;display:flex;flex-direction:column;gap:2px}
+.callout{position:absolute;left:16px;right:16px;bottom:30px;text-align:center;font-family:var(--display);font-weight:500;font-size:14px;text-wrap:balance}
+.water[data-state="bite"] .callout{font-size:26px;font-weight:700}
+.castbar{position:absolute;left:16px;right:16px;bottom:14px;height:5px;border-radius:3px;background:var(--water-track);overflow:hidden;opacity:0}
+.castbar i{display:block;height:100%;width:0;background:var(--on-water);border-radius:3px}
+.water[data-state="wait"] .castbar,.water[data-state="bite"] .castbar{opacity:1}
+.bobber{position:absolute;left:var(--bx);top:var(--by);width:20px;height:34px;margin:-17px 0 0 -10px;border-radius:10px;
+  background:linear-gradient(180deg,var(--float) 0 52%,var(--on-water) 52% 100%);opacity:0;transform:translateY(-40px)}
+.bobber::before{content:"";position:absolute;left:9px;top:-14px;width:2px;height:14px;background:var(--float)}
+.rings{position:absolute;left:var(--bx);top:var(--by);width:0;height:0}
+.rings::before,.rings::after{content:"";position:absolute;left:-30px;top:-2px;width:60px;height:20px;border-radius:50%;border:2px solid var(--on-water);opacity:0}
+.water[data-state="wait"] .bobber{opacity:1;transform:none;transition:transform .28s cubic-bezier(.3,1.6,.6,1),opacity .15s;animation:bob 1.8s ease-in-out .3s infinite}
+.water[data-state="wait"] .rings::before{animation:ring 2.4s ease-out infinite}
+.water[data-state="bite"] .bobber{opacity:1;animation:plunge .22s ease-in-out infinite alternate}
+.water[data-state="bite"] .rings::before{animation:ring .5s ease-out infinite}
+.water[data-state="bite"] .rings::after{animation:ring .5s ease-out .25s infinite}
+.water[data-state="bite"][data-rare="1"]{box-shadow:inset 0 0 0 3px var(--gold)}
+@keyframes bob{50%{transform:translateY(4px)}}
+@keyframes plunge{from{transform:translateY(12px) rotate(-8deg)}to{transform:translateY(20px) rotate(8deg)}}
+@keyframes ring{from{transform:scale(.4);opacity:.7}to{transform:scale(2.6);opacity:0}}
+
+.catch{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);min-width:170px;max-width:calc(100% - 32px);
+  background:var(--surface);color:var(--ink);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;align-items:center;gap:4px;animation:land .3s cubic-bezier(.3,1.5,.6,1)}
+.catch .fish{width:84px;height:50px}
+.catch-name{font-family:var(--display);font-weight:700;font-size:16px;text-align:center}
+.catch-sub{font-size:12px;color:var(--muted);text-align:center}
+.catch.rare{box-shadow:0 0 0 3px var(--gold)}
+@keyframes land{from{transform:translate(-50%,-30%) scale(.6);opacity:0}}
+
+/* Bag and food */
+.bag{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--surface);border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;text-align:center}
+.tile .fish{width:40px;height:24px}
+.tile-q{font-family:var(--display);font-size:17px;height:24px;line-height:24px;color:var(--muted)}
+.tile-name{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.tile-count{font-family:var(--display);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.tile.rare{box-shadow:inset 0 0 0 1px var(--gold)}
+.fish{display:block;flex:none}
+.food{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.food button{border:1px solid var(--line);border-radius:12px;padding:6px 6px 7px;font-size:12px;line-height:1.3;color:var(--muted);text-align:center;min-width:0;overflow-wrap:anywhere}
+.food button small{display:block;font-size:11px}
+.food button b{display:block;font-size:13px;font-weight:600;color:var(--ink)}
+
+/* Lists */
+h2{font-family:var(--display);font-weight:500;font-size:13px;margin:6px 0 0;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--surface);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.card.hot{box-shadow:inset 0 0 0 1px var(--gold)}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.card-name{font-weight:600;font-size:16px;min-width:0}
+.stock{font-size:12px;color:var(--muted);white-space:nowrap}
+.quality{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.q-orange{background:var(--q-orange)} .q-yellow{background:var(--q-yellow)} .q-green{background:var(--q-green)} .q-grey{background:var(--q-grey)}
+.needs{display:flex;flex-wrap:wrap;gap:6px}
+.need{display:flex;align-items:center;gap:6px;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-variant-numeric:tabular-nums;color:var(--ink);text-align:left}
+.need .fish{width:22px;height:13px}
+.need .have{color:var(--muted);font-size:12px}
+.need.lack{border-style:dashed;color:var(--muted)}
+.need.lack .have{color:var(--float)}
+.need.add{border-style:dashed}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.row > :first-child{min-width:0}
+.row.end{justify-content:flex-end}
+.btns{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.meta{font-size:13px;color:var(--muted);min-width:0}
+.meta b{color:var(--gold);font-weight:600}
+.btn{background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 12px;font-weight:600;font-size:14px;white-space:nowrap;transition:transform .08s}
+.btn:active:not(:disabled){transform:scale(.95)}
+.btn:disabled{background:var(--line);color:var(--muted)}
+.btn.quiet{background:none;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.quiet:disabled{background:none;color:var(--muted)}
+.btn.wide{width:100%}
+.done{font-size:13px;color:var(--muted);white-space:nowrap}
+.empty{font-size:13px;color:var(--muted);padding:4px 0}
+.event{border:1px solid var(--gold);border-radius:14px;padding:10px 14px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.event small{font-size:12px;color:var(--muted)}
+.settings{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.story{font-size:14px;border-left:2px solid var(--gold);padding-left:10px}
+.chance{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr);gap:8px;align-items:center}
+.slots{display:flex;flex-direction:column;gap:8px;min-width:0}
+.slot{width:100%;border:1px solid var(--line);border-radius:10px;padding:7px 8px;text-align:left;font-size:13px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.slot small{display:block;font-size:11px;color:var(--muted)}
+.slot.empty{border-style:dashed;color:var(--muted)}
+.slot.bad{border-color:var(--float)}
+.slot[aria-pressed="true"]{outline:2px solid var(--float);outline-offset:1px}
+.figure{display:block;width:84px;height:166px;color:var(--muted)}
+
+/* Map */
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cell{min-height:64px;border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;text-align:center;min-width:0;font-size:13px;line-height:1.2;overflow-wrap:anywhere}
+.cell b{font-weight:600}
+.cell small{font-size:11px;color:var(--muted)}
+.cell.fog{background:var(--line);color:var(--muted)}
+.cell.near{border:1px dashed var(--muted)}
+.cell.near b{font-family:var(--display);font-size:16px}
+.cell.open{background:var(--surface)}
+.cell.home{background:var(--ink);color:var(--bg);font-weight:600}
+.cell.goal{box-shadow:inset 0 0 0 1px var(--gold)}
+.cell[aria-pressed="true"]{outline:2px solid var(--float);outline-offset:1px}
+
+/* Tabs */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);margin-inline:-16px;padding-inline:6px}
+.tabs button{padding:14px 0 16px;font-size:12px;color:var(--muted);position:relative;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);font-weight:600}
+.tabs button[aria-selected="true"]::before{content:"";position:absolute;left:22%;right:22%;top:-1px;height:2px;background:var(--ink)}
+.tabs .badge{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--float);margin-left:3px;vertical-align:middle}
+
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:9px 14px;border-radius:10px;font-size:13px;width:max-content;max-width:calc(100% - 32px);text-align:center;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.on{opacity:1}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .water[data-state="bite"] .bobber{transform:translateY(16px)}
+}

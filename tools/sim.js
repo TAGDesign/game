@@ -3,24 +3,35 @@
 const fs = require('fs');
 const path = require('path');
 const code = fs.readFileSync(process.argv[2] || path.join(__dirname, '..', 'logic.js'), 'utf8');
-const names = 'MAX_SKILL,MAX_ENERGY,REGEN_MS,MERCHANT_EVERY,MERCHANT_STAY,RESPAWN_MS,PACK_SIZE,ENCH_COST,MAX_ENCH,REPAIR_ORE,REPAIR_GOLD,FISH,WATERS,RECIPES,GEAR,CELLS,TIERS,CHANCE,newState,recipeById,colorOf,waterOpen,slipChance,merchant,callMerchant,regen,spendCast,rollFish,landFish,canCook,cook,eat,priceOf,sell,recipeStatus,buyRecipe,buyGear,cellState,prunePack,packLeft,heroPower,tripChance,deathRisk,depart,resolveHero,disenchant,enchant,repair';
+const names = 'MAX_SKILL,MAX_ENERGY,REGEN_MS,MERCHANT_EVERY,MERCHANT_STAY,RESPAWN_MS,PACK_SIZE,ENCH_COST,MAX_ENCH,REPAIR_ORE,REPAIR_GOLD,FISH,WATERS,RECIPES,GEAR,CELLS,TIERS,CHANCE,newState,recipeById,colorOf,waterOpen,fishingOpen,slipChance,merchant,callMerchant,regen,spendCast,rollFish,landFish,canCook,cook,eat,priceOf,sell,recipeStatus,buyRecipe,buyGear,cellState,prunePack,packLeft,heroPower,tripChance,deathRisk,depart,resolveHero,disenchant,enchant,repair';
 const L = new Function(code + `; return {${names}};`)();
 const ok = (cond, msg) => { if (!cond) { console.log('ПРОВАЛ:', msg); process.exitCode = 1; } };
 
 /* ---- сценарии ---- */
 {
-  const t = 1e12, s = L.newState(t);
+  const t = 1e12, s = L.newState(t), t0 = t - 100000;
   ok(L.heroPower(s, []).total === 5, 'стартовая сила 5');
-  ok(L.tripChance(s, 'zavod', []) === 60, 'заводь на старте 60%');
-  ok(L.cellState(s, 'zavod') === 'near' && L.cellState(s, 'roscha') === 'fog' && L.cellState(s, 'brod') === 'near', 'туман: соседи дома доступны');
+  // онбординг: открыт только дом, единственная дорога — к пруду
+  ok(L.cellState(s, 'prud') === 'near' && ['melnica', 'brod', 'roscha'].every(id => L.cellState(s, id) === 'fog'), 'на старте открыт только путь к пруду');
+  ok(!L.fishingOpen(s) && !L.spendCast(s, t0) && s.energy === L.MAX_ENERGY, 'до разведки пруда рыбачить нельзя');
+  ok(!L.depart(s, 'melnica', t0), 'до разведки пруда в другие места не уйти');
+  ok(L.tripChance(s, 'prud') === 100, 'разведка пруда без риска');
+  ok(L.depart(s, 'prud', t0) && s.hero.until === t0 + L.TIERS[0].ms, 'герой уходит разведывать пруд');
+  ok(L.resolveHero(s, t0 + L.TIERS[0].ms, () => 0.999) === 'win' && s.opened.includes('prud') && s.trophies.length === 1 && s.gold >= 10, 'разведка пруда не проваливается даже при худшем броске и приносит первую добычу');
+  ok(L.fishingOpen(s) && L.waterOpen(s, 'pond') && L.spendCast(s, t0 + 40000), 'после разведки на пруду можно рыбачить');
+  ok(!L.depart(s, 'prud', t0 + 40000), 'на пруд второй раз не ходят');
+  ok(['melnica', 'brod', 'roscha'].every(id => L.cellState(s, id) === 'near'), 'после пруда открыты соседние места');
+  ok(L.tripChance(s, 'melnica', []) === 60, 'вторая зона уже с риском: Мельница 60%');
+  s.fishing = 50; ok(!L.waterOpen(s, 'river'), 'река закрыта до разведки брода даже при большом навыке'); s.fishing = 1;
+  s.trophies = []; s.gold = 0; s.energy = L.MAX_ENERGY;
   s.dishes.r1 = 2; s.pack = ['r1', 'r1', 'r1']; L.prunePack(s);
   ok(s.pack.length === 2, 'припасов не больше, чем блюд');
-  ok(L.tripChance(s, 'zavod') === 80, 'два карася дают 80%');
-  ok(L.depart(s, 'zavod', t) && s.dishes.r1 === 0 && s.hero.status === 'away', 'выход съедает припасы');
+  ok(L.tripChance(s, 'melnica') === 80, 'два карася дают 80%');
+  ok(L.depart(s, 'melnica', t) && s.dishes.r1 === 0 && s.hero.status === 'away', 'выход съедает припасы');
   ok(!L.spendCast(s, t), 'пока герой в пути, рыбачить нельзя');
   ok(L.resolveHero(s, t + 1000) === null, 'раньше срока не возвращается');
-  ok(L.resolveHero(s, t + 60000, () => 0) === 'win' && s.opened.includes('zavod') && s.trophies.length === 1 && s.gold >= 15, 'успех открывает клетку и даёт добычу');
-  ok(L.cellState(s, 'roscha') === 'near', 'после заводи открывается путь в рощу');
+  ok(L.resolveHero(s, t + 60000, () => 0) === 'win' && s.opened.includes('melnica') && s.trophies.length === 1 && s.gold >= 15, 'успех открывает клетку и даёт добычу');
+  ok(L.cellState(s, 'paseka') === 'near', 'после мельницы открывается путь к пасеке');
   const d = L.disenchant(s, null); ok(d === 2 && s.dust === 2 && !s.trophies.length, 'распыление даёт пыль');
   s.dust = 4; ok(L.enchant(s, 'armor') && s.armor.ench === 1 && L.heroPower(s, []).total === 6, 'чары брони +1 силы');
   // гибель
@@ -33,6 +44,7 @@ const ok = (cond, msg) => { if (!cond) { console.log('ПРОВАЛ:', msg); proc
   ok(L.resolveHero(s, t + 70000 + 120000 + L.RESPAWN_MS) === 'revived' && s.hero.status === 'home', 'герой возрождается');
   ok(!L.repair(s, 'ore') && !L.repair(s, 'gold'), 'без руды и золота не починить');
   s.ore = 2; ok(L.repair(s, 'ore') && !s.armor.broken && L.heroPower(s, []).total === 6, 'починка рудой возвращает силу и чары');
+  s.opened.push('brod'); ok(L.waterOpen(s, 'river') && !L.waterOpen(s, 'lake'), 'разведанный брод открывает реку, озеро пока по навыку');
   // торговец
   const absent = Math.floor(t / L.MERCHANT_EVERY) * L.MERCHANT_EVERY + L.MERCHANT_STAY + 1000;
   s.fish.karas = 5;

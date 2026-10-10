@@ -22,11 +22,12 @@ const FISH = {
   sudak:   {name:'Судак',        water:'lake',  weight:33, rare:false, price:15},
   taimen:  {name:'Таймень',      water:'lake',  weight:12, rare:true,  price:80},
 };
-// open — с какого рыболовства пускает; comfort — с какого рыба перестаёт срываться;
+// пруд и река открываются разведкой своего места на карте (см. gather в CELLS);
+// open — у водоёма без места: с какого рыболовства пускает; comfort — с какого рыба перестаёт срываться;
 // yellow / green / grey — с какого навыка улов здесь качает рыболовство реже
 const WATERS = {
-  pond:  {name:'Пруд',  open:1,  comfort:1,  yellow:12, green:20, grey:28},
-  river: {name:'Река',  open:15, comfort:25, yellow:27, green:35, grey:43},
+  pond:  {name:'Пруд',  comfort:1,  yellow:12, green:20, grey:28},
+  river: {name:'Река',  comfort:25, yellow:27, green:35, grey:43},
   lake:  {name:'Озеро', open:30, comfort:40, yellow:42, green:47, grey:51},
 };
 // power — сколько силы блюдо даёт герою, если взять его в дорогу
@@ -59,7 +60,9 @@ const QUALITY_TEXT = {
   grey:'Кулинария больше не растёт',
 };
 
-/* карта серии: 3 колонки, 4 ряда, дом внизу по центру, цель наверху */
+/* карта серии: 3 колонки, 4 ряда, дом внизу по центру, цель наверху.
+   gather — что можно делать на месте после разведки: пока только рыбалка, позже травы и руда.
+   safe — обучающая разведка: не проваливается, пока она не пройдена, остальная карта под туманом */
 const SERIES = {name:'Серия 1. Зажги маяк', goal:'mayak'};
 const CELLS = {
   ozero:   {name:'Соляное озеро',     r:0, c:0, d:15, tier:3, text:'Берег белый от соли. В лодке у воды лежит завёрнутая в парусину линза для маяка.'},
@@ -69,13 +72,14 @@ const CELLS = {
   pereval: {name:'Перевал',           r:1, c:1, d:12, tier:3, text:'С перевала видно море и тёмную башню маяка. Огня на ней нет уже много лет.'},
   rudnik:  {name:'Рудник',            r:1, c:2, d:10, tier:3, text:'Заброшенный рудник. В вагонетке лежат слитки и записка: «Линзу отлили, осталось донести».'},
   roscha:  {name:'Берёзовая роща',    r:2, c:0, d:7,  tier:2, text:'На стволах висят потухшие фонари. Кто-то отмечал ими дорогу к маяку.'},
-  brod:    {name:'Брод',              r:2, c:1, d:6,  tier:2, text:'Брод выложен плоскими камнями. На том берегу начинается тропа, по которой давно никто не ходил.'},
+  brod:    {name:'Брод',              r:2, c:1, d:6,  tier:2, gather:{fish:'river'}, text:'Брод выложен плоскими камнями. На том берегу начинается тропа, по которой давно никто не ходил.'},
   paseka:  {name:'Пасека',            r:2, c:2, d:8,  tier:2, text:'Ульи пусты, но в одном спрятан ключ с биркой «верхняя дверь».'},
-  zavod:   {name:'Заводь',            r:3, c:0, d:4,  tier:1, text:'Тихая заводь за камышами. На старых мостках кто-то вырезал стрелку на север и слово «свет».'},
+  prud:    {name:'Пруд',              r:3, c:0, d:0,  tier:0, safe:true, gather:{fish:'pond'}, text:'Тихий пруд за камышами, вода стоит, рыба плещется у берега. На старых мостках кто-то вырезал стрелку на север и слово «свет».'},
   home:    {name:'Дом',               r:3, c:1},
-  melnica: {name:'Мельница',          r:3, c:2, d:5,  tier:1, text:'Мельница давно стоит, но жернова целы. В ларе лежит журнал смотрителя маяка, последняя запись обрывается на полуслове.'},
+  melnica: {name:'Мельница',          r:3, c:2, d:4,  tier:1, text:'Мельница давно стоит, но жернова целы. В ларе лежит журнал смотрителя маяка, последняя запись обрывается на полуслове.'},
 };
 const TIERS = {
+  0:{ms:30000,  gold:[10, 15],   ore:[0, 0], trophies:[1, 1]},   // обучающая разведка пруда
   1:{ms:60000,  gold:[15, 25],   ore:[1, 2], trophies:[1, 1]},
   2:{ms:120000, gold:[40, 60],   ore:[1, 2], trophies:[1, 2]},
   3:{ms:180000, gold:[90, 130],  ore:[2, 3], trophies:[2, 2]},
@@ -98,12 +102,19 @@ function colorOf(t, skill){
   return skill < t.yellow ? 'orange' : skill < t.green ? 'yellow' : skill < t.grey ? 'green' : 'grey';
 }
 function effFishing(s){ return s.fishing + (s.buffs.skill > 0 ? BUFF_SKILL : 0); }
-function waterOpen(s, id){ return effFishing(s) >= WATERS[id].open; }
+const waterPlace = id => Object.keys(CELLS).find(c => CELLS[c].gather && CELLS[c].gather.fish === id);
+// водоём с местом открыт, когда место разведано; без места — по навыку, как раньше
+function waterOpen(s, id, bonus = true){
+  const place = waterPlace(id);
+  return place ? s.opened.includes(place) : (bonus ? effFishing(s) : s.fishing) >= WATERS[id].open;
+}
+const fishingOpen = s => Object.keys(WATERS).some(id => waterOpen(s, id));
 function slipChance(s, waterId, bonus){
   return Math.max(0, Math.min(0.4, (WATERS[waterId].comfort - (s.fishing + bonus)) * 0.04));
 }
 function hash(n){ n = Math.imul(n ^ (n >>> 15), 2246822519); n = Math.imul(n ^ (n >>> 13), 3266489917); return (n ^ (n >>> 16)) >>> 0; }
-function openFish(s){ return Object.keys(FISH).filter(f => s.fishing >= WATERS[FISH[f].water].open); }
+// пруд всегда в списке, чтобы клёв часа и спрос торговца были и до первой разведки
+function openFish(s){ return Object.keys(FISH).filter(f => FISH[f].water === 'pond' || waterOpen(s, FISH[f].water, false)); }
 
 /* клёв часа: одна рыба клюёт чаще */
 function biteEvent(s, now = Date.now()){
@@ -138,7 +149,7 @@ function regen(s, now = Date.now()){
 }
 function spendCast(s, now = Date.now()){
   regen(s, now);
-  if (s.energy <= 0 || s.hero.status !== 'home') return false;
+  if (s.energy <= 0 || s.hero.status !== 'home' || !waterOpen(s, s.water)) return false;
   const wasFull = s.energy >= MAX_ENERGY;
   s.energy--; s.casts++;
   if (wasFull && s.energy < MAX_ENERGY) s.energyAt = now;
@@ -229,10 +240,14 @@ function buyGear(s, g, now = Date.now()){
 }
 
 /* герой, карта и вылазки */
+// неразведанное обучающее место: пока оно есть, вся остальная карта под туманом
+const tutorialCell = s => Object.keys(CELLS).find(id => CELLS[id].safe && !s.opened.includes(id));
 function cellState(s, id){
   if (id === 'home') return 'home';
   if (s.opened.includes(id)) return 'open';
   const c = CELLS[id];
+  const lesson = tutorialCell(s);
+  if (lesson) return id === lesson ? 'near' : 'fog';
   const near = s.opened.some(o => Math.abs(CELLS[o].r - c.r) + Math.abs(CELLS[o].c - c.c) === 1);
   return near ? 'near' : 'fog';
 }
@@ -251,6 +266,7 @@ function heroPower(s, pack = s.pack){
   return {parts, total: parts.reduce((a, p) => a + p.v, 0)};
 }
 function tripChance(s, id, pack = s.pack){
+  if (CELLS[id].safe) return 100;
   return Math.max(5, Math.min(95, 50 + (heroPower(s, pack).total - CELLS[id].d) * 10));
 }
 // чем меньше шанс, тем чаще неудача заканчивается гибелью
@@ -258,6 +274,7 @@ const deathRisk = chance => Math.round((100 - chance) * (100 - chance) / 100);
 function depart(s, id, now = Date.now()){
   const st = cellState(s, id);
   if (s.hero.status !== 'home' || (st !== 'near' && st !== 'open')) return false;
+  if (CELLS[id].safe && st === 'open') return false;   // обучающая разведка одна, за добычей туда не ходят
   prunePack(s);
   const chance = tripChance(s, id);
   for (const d of s.pack) s.dishes[d]--;
@@ -272,11 +289,11 @@ function resolveHero(s, now = Date.now(), rnd = Math.random){
   if (h.status !== 'away' || now < h.until) return null;
   const id = h.target, cell = CELLS[id], tier = TIERS[cell.tier];
   const roll = 1 + Math.floor(rnd() * 100);
-  if (roll <= h.chance){
+  if (cell.safe || roll <= h.chance){
     const first = !s.opened.includes(id);
     const loot = {gold:between(rnd, tier.gold), ore:between(rnd, tier.ore), trophies:[]};
-    const names = TROPHIES[Math.min(3, cell.tier)];
-    for (let i = between(rnd, tier.trophies); i > 0; i--) loot.trophies.push({n:names[Math.floor(rnd() * names.length)], t:Math.min(3, cell.tier)});
+    const tt = Math.max(1, Math.min(3, cell.tier)), names = TROPHIES[tt];
+    for (let i = between(rnd, tier.trophies); i > 0; i--) loot.trophies.push({n:names[Math.floor(rnd() * names.length)], t:tt});
     s.gold += loot.gold; s.ore += loot.ore; s.trophies.push(...loot.trophies);
     s.fresh = {gold:loot.gold, ore:loot.ore, names:loot.trophies.map(t => t.n)};
     if (first) s.opened.push(id);

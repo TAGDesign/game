@@ -188,6 +188,7 @@ h2{font-family:var(--display);font-weight:500;font-size:13px;margin:6px 0 0;colo
 .tabs button{padding:14px 0 16px;font-size:12px;color:var(--muted);position:relative;white-space:nowrap}
 .tabs button[aria-selected="true"]{color:var(--ink);font-weight:600}
 .tabs button[aria-selected="true"]::before{content:"";position:absolute;left:22%;right:22%;top:-1px;height:2px;background:var(--ink)}
+.tabs button[aria-disabled="true"]{opacity:.45}
 .tabs .badge{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--float);margin-left:3px;vertical-align:middle}
 
 .toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);

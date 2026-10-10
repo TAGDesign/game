@@ -50,7 +50,7 @@ function plusOne(box){
 const fishSvg = id => `<svg class="fish" viewBox="0 0 40 24" style="color:var(--f-${id})" aria-hidden="true"><use href="#fish"/></svg>`;
 const clock = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 const goodName = g => g.kind === 'fish' ? FISH[g.id].name : recipeById(g.id).name;
-const placeName = id => cellState(state, id) === 'open' || CELLS[id].goal ? CELLS[id].name : 'неразведанное место';
+const placeName = id => cellState(state, id) === 'open' || CELLS[id].goal || CELLS[id].safe ? CELLS[id].name : 'неразведанное место';
 function heroStatus(now = Date.now()){
   const h = state.hero;
   if (h.status === 'away') return `Герой на вылазке: ${placeName(h.target)}, вернётся через ${clock(h.until - now)}`;
@@ -82,6 +82,7 @@ function blockedText(now = Date.now()){
 function cast(){
   clearTimeout(timer);
   if (!waterOpen(state, state.water)){
+    if (!bestWater()) return;
     state.water = bestWater();
     toast('Баф закончился, для того водоёма мало рыболовства'); renderAll();
   }
@@ -153,13 +154,15 @@ const PLACES = Object.keys(CELLS).length - 1;
 function goalText(now = Date.now()){
   if (state.hero.status !== 'home') return heroStatus(now);
   if (state.won) return 'Серия 1 пройдена. Маяк горит';
+  const lesson = tutorialCell(state);
+  if (lesson) return `Начало: разведай ${CELLS[lesson].name.toLowerCase()} на карте`;
   return `${SERIES.name}. Разведано ${state.opened.length - 1} из ${PLACES}`;
 }
 function renderWaters(){
   $('waters').innerHTML = Object.entries(WATERS).map(([id, w]) =>
     waterOpen(state, id)
       ? `<button id="water-${id}" data-water="${id}" aria-pressed="${state.water === id}">${w.name}</button>`
-      : `<button id="water-${id}" disabled>${w.name}<small>с рыболовства ${w.open}</small></button>`
+      : `<button id="water-${id}" disabled>${w.name}<small>${waterPlace(id) ? 'разведай: ' + CELLS[waterPlace(id)].name : 'с рыболовства ' + w.open}</small></button>`
   ).join('');
 }
 function renderWaterInfo(){
@@ -214,7 +217,7 @@ function rank(){
   return state.won ? 'Смотритель маяка' : n >= 6 ? 'Разведчик' : n >= 3 ? 'Следопыт' : 'Новичок';
 }
 function reportHtml(rep){
-  const cell = CELLS[rep.id], dice = `Бросок ${rep.roll}, нужно было не больше ${rep.chance}.`;
+  const cell = CELLS[rep.id], dice = cell.safe ? '' : `Бросок ${rep.roll}, нужно было не больше ${rep.chance}.`;
   if (rep.outcome === 'win'){
     const groups = {}; rep.loot.trophies.forEach(t => groups[t.n] = (groups[t.n] || 0) + 1);
     const tro = Object.entries(groups).map(([n, k]) => n + (k > 1 ? ' ×' + k : '')).join(', ');
@@ -222,7 +225,8 @@ function reportHtml(rep){
       <span class="meta">${dice}</span>
       ${rep.first ? `<span class="story">${cell.text}</span>` : ''}
       ${rep.first && cell.goal ? '<span class="card-name">Серия пройдена. Следующая серия откроет берег за морем.</span>' : ''}
-      <span class="meta">В рюкзаке прибавилось: ${rep.loot.gold} золота, руда ×${rep.loot.ore}${tro ? ', ' + tro : ''}</span>
+      <span class="meta">В рюкзаке прибавилось: ${rep.loot.gold} золота${rep.loot.ore ? ', руда ×' + rep.loot.ore : ''}${tro ? ', ' + tro : ''}</span>
+      ${rep.first && cell.gather && cell.gather.fish ? `<span class="meta"><b>Здесь теперь можно рыбачить. Нажми на это место на карте или открой вкладку «Рыбалка».</b></span>` : ''}
       <div class="row end"><button class="btn" id="report-ok" data-report="ok">Понятно</button></div></div>`;
   }
   if (rep.outcome === 'death')
@@ -312,7 +316,7 @@ function renderHome(){
     ${slotDetail()}
     <div class="card">
       <div class="card-head"><span class="card-name">Рюкзак</span><span class="stock">Руда ${state.ore} · Пыль ${state.dust}</span></div>
-      ${fr ? `<span class="meta"><b>С последней вылазки: +${fr.gold} золота, руда ×${fr.ore}${fr.names.length ? ', ' + [...new Set(fr.names)].join(', ') : ''}</b></span>` : ''}
+      ${fr ? `<span class="meta"><b>С последней вылазки: +${fr.gold} золота${fr.ore ? ', руда ×' + fr.ore : ''}${fr.names.length ? ', ' + [...new Set(fr.names)].join(', ') : ''}</b></span>` : ''}
       ${trophies || '<span class="meta">Трофеев нет. Герой приносит их с вылазок, а распылённые трофеи дают пыль для чар.</span>'}
       ${state.trophies.length > 1 ? `<button class="btn wide" id="dust-all" data-dust="*">Распылить все</button>` : ''}
       <span class="meta">Еда</span>
@@ -339,7 +343,8 @@ function cellHtml(id){
   if (st === 'home') return `<button class="cell home" id="cell-home" disabled>Дом</button>`;
   const here = state.hero.status === 'away' && state.hero.target === id;
   let top = '', sub = 'туман';
-  if (st === 'open'){ top = c.name; sub = c.goal ? 'огонь горит' : 'разведано'; }
+  if (st === 'open'){ top = c.name; sub = c.goal ? 'огонь горит' : c.gather && c.gather.fish ? 'рыбалка' : 'разведано'; }
+  else if (c.safe){ top = c.name; sub = 'разведка'; }
   else if (c.goal){ top = c.name; sub = st === 'near' ? `цель · сложность ${c.d}` : 'цель серии'; }
   else if (st === 'near'){ top = '?'; sub = `сложность ${c.d}`; }
   return `<button class="cell ${st}${c.goal ? ' goal' : ''}" id="cell-${id}" data-cell="${id}" aria-pressed="${sel === id}" ${st === 'fog' ? 'disabled' : ''}>${top ? `<b>${top}</b>` : ''}<small>${here ? 'герой здесь' : sub}</small></button>`;
@@ -353,10 +358,21 @@ function renderMap(){
   const packed = state.pack.map((id, i) => `<button class="need" id="unpack-${i}" data-unpack="${i}" aria-label="Убрать из припасов: ${recipeById(id).name}">${recipeById(id).name} +${recipeById(id).power} ✕</button>`).join('');
   const addable = state.pack.length < PACK_SIZE ? RECIPES.filter(r => packLeft(state, r.id) > 0).map(r =>
     `<button class="need add" id="pack-${r.id}" data-pack="${r.id}">+ ${r.name} (+${r.power}), есть ${packLeft(state, r.id)}</button>`).join('') : '';
-  const goLabel = h.status === 'away' ? 'Герой уже в пути' : h.status === 'dead' ? 'Герой возрождается' : `Отправиться · ${clock(tier.ms)}`;
+  const goLabel = h.status === 'away' ? 'Герой уже в пути' : h.status === 'dead' ? 'Герой возрождается' : `${c.safe ? 'Разведать' : 'Отправиться'} · ${clock(tier.ms)}`;
+  const water = st === 'open' && c.gather && c.gather.fish;
+  const fishBtn = water ? `<button class="btn wide" id="fish-here" data-fishat="${water}">Рыбачить: ${WATERS[water].name.toLowerCase()}</button>` : '';
+  if (c.safe){
+    $('mapDetail').innerHTML = st === 'open'
+      ? `<div class="card"><div class="card-head"><span class="card-name">${c.name}</span><span class="stock">Разведано</span></div>
+          <span class="story">${c.text}</span>${fishBtn}</div>`
+      : `<div class="card"><div class="card-head"><span class="card-name">${c.name}</span><span class="stock">Первая разведка</span></div>
+          <span class="meta">Разведка безопасна: герой точно вернётся и принесёт первые находки. После неё здесь можно рыбачить.</span>
+          <button class="btn wide" id="depart" data-depart="${sel}" ${h.status === 'home' ? '' : 'disabled'}>${goLabel}</button></div>`;
+    return;
+  }
   $('mapDetail').innerHTML = `<div class="card">
     <div class="card-head"><span class="card-name">${st === 'open' || c.goal ? c.name : 'Неразведанное место'}</span><span class="stock">Сложность ${c.d}</span></div>
-    ${st === 'open' ? `<span class="story">${c.text}</span><span class="meta">Сюда можно ходить повторно за золотом, рудой и трофеями.</span>` : ''}
+    ${st === 'open' ? `<span class="story">${c.text}</span>${fishBtn}<span class="meta">Сюда можно ходить повторно за золотом, рудой и трофеями.</span>` : ''}
     <div class="row"><span><span class="chance">${chance}%</span><br><span class="meta">шанс успеха</span></span>
       <span class="meta" style="text-align:right">Сила ${p.total} против сложности ${c.d}.<br>Риск гибели ${deathRisk(chance)}%.</span></div>
     <span class="meta">Каждое очко силы меняет шанс на 10%. Припасы в дорогу, до ${PACK_SIZE} блюд, съедаются при выходе:</span>
@@ -407,6 +423,8 @@ function renderBadges(){
   const set = (id, name, on, title) => $(id).innerHTML = name + (on ? `<span class="badge" title="${title}"></span>` : '');
   set('tabbtn-home', 'Дом', !!state.report || state.armor.broken || state.trophies.length > 0, 'Дома есть дела');
   set('tabbtn-cook', 'Кухня', cookable, 'Есть что приготовить');
+  const fb = $('tabbtn-fish'), canFish = fishingOpen(state);
+  fb.setAttribute('aria-disabled', !canFish); fb.title = canFish ? '' : 'Сначала разведай пруд на карте';
   set('tabbtn-map', 'Карта', state.hero.status === 'home' && !state.won, 'Герой готов к вылазке');
   set('tabbtn-market', 'Торговец', m.present, 'Торговец здесь');
 }
@@ -414,6 +432,7 @@ function renderAll(){ renderHud(); renderHome(); renderWaters(); renderWaterInfo
 
 const TABS = ['home', 'fish', 'cook', 'map', 'market'];
 function showTab(t){
+  if (t === 'fish' && !fishingOpen(state)){ t = 'map'; toast('Сначала разведай пруд на карте'); }
   if (tab === 'fish' && t !== 'fish') stopFishing();
   tab = t;
   for (const id of TABS){
@@ -524,6 +543,7 @@ document.addEventListener('click', e => {
   else if (d.cell){ sel = d.cell; renderMap(); }
   else if (d.pack){ if (state.pack.length < PACK_SIZE && packLeft(state, d.pack) > 0){ state.pack.push(d.pack); save(); renderMap(); } }
   else if (d.unpack){ state.pack.splice(+d.unpack, 1); save(); renderMap(); }
+  else if (d.fishat){ state.water = d.fishat; save(); showTab('fish'); }
   else if (d.water){ state.water = d.water; stopFishing(); save(); renderAll(); }
 });
 
@@ -562,7 +582,12 @@ function start(data){
   state.buffs = Object.assign({skill:0, luck:0}, state.buffs);
   state.armor = Object.assign({broken:false, ench:0}, state.armor);
   state.cur = {bonus:0, luck:false};
-  if (!WATERS[state.water] || !waterOpen(state, state.water)) state.water = 'pond';
+  // старые сохранения: Заводь стала Прудом, а кто уже рыбачил, тому пруд открыт сразу
+  state.opened = state.opened.map(id => id === 'zavod' ? 'prud' : id).filter(id => CELLS[id]);
+  if (!state.opened.includes('prud') && state.casts > 0) state.opened.push('prud');
+  if (state.hero.target === 'zavod') state.hero.target = 'prud';
+  if (state.report && !CELLS[state.report.id]) state.report = null;
+  if (!WATERS[state.water] || !waterOpen(state, state.water)) state.water = bestWater() || 'pond';
   $('energyMax').textContent = MAX_ENERGY;
   renderAll(); tick();
   setInterval(tick, 500);

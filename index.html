@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Клёв и котелок</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* базовый сброс: раньше его добавлял хостинг, где лежал прототип */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: one phone-height column. Two skills and gold on top, the current place fills the middle, tabs sit under the thumb. */
+:root{
+  --bg:#E4EBE9; --surface:#F5F8F7; --ink:#12262A; --muted:#536A6E; --line:#C6D3D0;
+  --water-a:#3C9198; --water-b:#1B5A65; --on-water:#F1FBFA; --fishbar:#2B858E; --water-track:rgba(255,255,255,.22);
+  --float:#DD4326; --gold:#A87A12;
+  --q-orange:#DB6E12; --q-yellow:#C9A30F; --q-green:#3E9B4C; --q-grey:#8B9799;
+  --f-karas:#8C9966; --f-okun:#5A8F47; --f-karp:#D6A21C; --f-forel:#C7788A; --f-shchuka:#3F7058; --f-osetr:#5C7396;
+  --f-sig:#8FA9B8; --f-sudak:#7A7FA8; --f-taimen:#B5553F;
+  --display:'Unbounded','Trebuchet MS',system-ui,sans-serif;
+  --body:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C181C; --surface:#14262B; --ink:#E3EEEC; --muted:#8CA3A5; --line:#25393E;
+    --water-a:#17525C; --water-b:#0A2A33; --on-water:#E9F7F6; --fishbar:#45ABB5; --water-track:rgba(255,255,255,.22);
+    --float:#FF6747; --gold:#E0B548;
+    --q-orange:#F08A33; --q-yellow:#E2BE3A; --q-green:#5DBB6B; --q-grey:#74878A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C181C; --surface:#14262B; --ink:#E3EEEC; --muted:#8CA3A5; --line:#25393E;
+  --water-a:#17525C; --water-b:#0A2A33; --on-water:#E9F7F6; --fishbar:#45ABB5; --water-track:rgba(255,255,255,.22);
+  --float:#FF6747; --gold:#E0B548;
+  --q-orange:#F08A33; --q-yellow:#E2BE3A; --q-green:#5DBB6B; --q-grey:#74878A;
+  color-scheme:dark;
+}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.35;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:2px solid var(--float);outline-offset:2px}
+button:disabled{cursor:default}
+
+.app{height:100%;max-width:480px;margin:0 auto;padding-inline:16px;padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
+
+/* HUD */
+.hud{display:flex;align-items:flex-end;gap:12px}
+.skill{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;gap:5px}
+.skill-row{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.label{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.skill-num{font-family:var(--display);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.skill-num b{display:inline-block;font-weight:700}
+.skill-num i{font-style:normal;font-size:11px;color:var(--fishbar);margin-left:3px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:3px;transition:width .35s ease}
+#fishBar{background:var(--fishbar)} #cookBar{background:var(--float)} #heroBar{background:var(--fishbar)}
+.gold{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:700;font-size:17px;line-height:1;padding-bottom:9px;font-variant-numeric:tabular-nums}
+.coin{width:13px;height:13px;border-radius:50%;background:var(--gold);flex:none}
+.gold b{display:inline-block}
+.pop{animation:pop .32s ease}
+@keyframes pop{40%{transform:scale(1.35)}}
+.plus{position:absolute;right:34px;top:4px;font-family:var(--display);font-size:12px;color:var(--float);pointer-events:none;animation:rise .9s ease forwards}
+@keyframes rise{to{transform:translateY(-12px);opacity:0}}
+.goal{font-size:13px;color:var(--muted);min-height:1.35em}
+
+/* Panels */
+main{flex:1;min-height:0;display:flex;flex-direction:column}
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-bottom:12px}
+
+/* Water switch */
+.waters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.waters button{padding:8px 6px;border-radius:10px;border:1px solid var(--line);font-size:13px;color:var(--muted);text-align:center;line-height:1.2}
+.waters button small{display:block;font-size:11px}
+.waters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+
+/* The water */
+.water{flex:1;min-height:230px;position:relative;width:100%;border-radius:20px;overflow:hidden;color:var(--on-water);--bx:50%;--by:52%;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 22px,rgba(255,255,255,.05) 22px 23px),
+    linear-gradient(180deg,var(--water-a),var(--water-b));
+  user-select:none;-webkit-user-select:none}
+.wtop{position:absolute;left:16px;right:16px;top:12px;display:flex;justify-content:space-between;gap:10px;font-size:13px;text-align:left}
+.wtop b{font-family:var(--display);font-size:15px;font-variant-numeric:tabular-nums}
+.wnote{position:absolute;left:16px;right:16px;top:38px;font-size:12px;text-align:left;opacity:.85;display:flex;flex-direction:column;gap:2px}
+.callout{position:absolute;left:16px;right:16px;bottom:30px;text-align:center;font-family:var(--display);font-weight:500;font-size:14px;text-wrap:balance}
+.water[data-state="bite"] .callout{font-size:26px;font-weight:700}
+.castbar{position:absolute;left:16px;right:16px;bottom:14px;height:5px;border-radius:3px;background:var(--water-track);overflow:hidden;opacity:0}
+.castbar i{display:block;height:100%;width:0;background:var(--on-water);border-radius:3px}
+.water[data-state="wait"] .castbar,.water[data-state="bite"] .castbar{opacity:1}
+.bobber{position:absolute;left:var(--bx);top:var(--by);width:20px;height:34px;margin:-17px 0 0 -10px;border-radius:10px;
+  background:linear-gradient(180deg,var(--float) 0 52%,var(--on-water) 52% 100%);opacity:0;transform:translateY(-40px)}
+.bobber::before{content:"";position:absolute;left:9px;top:-14px;width:2px;height:14px;background:var(--float)}
+.rings{position:absolute;left:var(--bx);top:var(--by);width:0;height:0}
+.rings::before,.rings::after{content:"";position:absolute;left:-30px;top:-2px;width:60px;height:20px;border-radius:50%;border:2px solid var(--on-water);opacity:0}
+.water[data-state="wait"] .bobber{opacity:1;transform:none;transition:transform .28s cubic-bezier(.3,1.6,.6,1),opacity .15s;animation:bob 1.8s ease-in-out .3s infinite}
+.water[data-state="wait"] .rings::before{animation:ring 2.4s ease-out infinite}
+.water[data-state="bite"] .bobber{opacity:1;animation:plunge .22s ease-in-out infinite alternate}
+.water[data-state="bite"] .rings::before{animation:ring .5s ease-out infinite}
+.water[data-state="bite"] .rings::after{animation:ring .5s ease-out .25s infinite}
+.water[data-state="bite"][data-rare="1"]{box-shadow:inset 0 0 0 3px var(--gold)}
+@keyframes bob{50%{transform:translateY(4px)}}
+@keyframes plunge{from{transform:translateY(12px) rotate(-8deg)}to{transform:translateY(20px) rotate(8deg)}}
+@keyframes ring{from{transform:scale(.4);opacity:.7}to{transform:scale(2.6);opacity:0}}
+
+.catch{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);min-width:170px;max-width:calc(100% - 32px);
+  background:var(--surface);color:var(--ink);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;align-items:center;gap:4px;animation:land .3s cubic-bezier(.3,1.5,.6,1)}
+.catch .fish{width:84px;height:50px}
+.catch-name{font-family:var(--display);font-weight:700;font-size:16px;text-align:center}
+.catch-sub{font-size:12px;color:var(--muted);text-align:center}
+.catch.rare{box-shadow:0 0 0 3px var(--gold)}
+@keyframes land{from{transform:translate(-50%,-30%) scale(.6);opacity:0}}
+
+/* Bag and food */
+.bag{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--surface);border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;text-align:center}
+.tile .fish{width:40px;height:24px}
+.tile-q{font-family:var(--display);font-size:17px;height:24px;line-height:24px;color:var(--muted)}
+.tile-name{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.tile-count{font-family:var(--display);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.tile.rare{box-shadow:inset 0 0 0 1px var(--gold)}
+.fish{display:block;flex:none}
+.food{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.food button{border:1px solid var(--line);border-radius:12px;padding:6px 6px 7px;font-size:12px;line-height:1.3;color:var(--muted);text-align:center;min-width:0;overflow-wrap:anywhere}
+.food button small{display:block;font-size:11px}
+.food button b{display:block;font-size:13px;font-weight:600;color:var(--ink)}
+
+/* Lists */
+h2{font-family:var(--display);font-weight:500;font-size:13px;margin:6px 0 0;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--surface);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.card.hot{box-shadow:inset 0 0 0 1px var(--gold)}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.card-name{font-weight:600;font-size:16px;min-width:0}
+.stock{font-size:12px;color:var(--muted);white-space:nowrap}
+.quality{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.q-orange{background:var(--q-orange)} .q-yellow{background:var(--q-yellow)} .q-green{background:var(--q-green)} .q-grey{background:var(--q-grey)}
+.needs{display:flex;flex-wrap:wrap;gap:6px}
+.need{display:flex;align-items:center;gap:6px;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-variant-numeric:tabular-nums;color:var(--ink);text-align:left}
+.need .fish{width:22px;height:13px}
+.need .have{color:var(--muted);font-size:12px}
+.need.lack{border-style:dashed;color:var(--muted)}
+.need.lack .have{color:var(--float)}
+.need.add{border-style:dashed}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.row > :first-child{min-width:0}
+.row.end{justify-content:flex-end}
+.btns{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.meta{font-size:13px;color:var(--muted);min-width:0}
+.meta b{color:var(--gold);font-weight:600}
+.btn{background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 12px;font-weight:600;font-size:14px;white-space:nowrap;transition:transform .08s}
+.btn:active:not(:disabled){transform:scale(.95)}
+.btn:disabled{background:var(--line);color:var(--muted)}
+.btn.quiet{background:none;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.quiet:disabled{background:none;color:var(--muted)}
+.btn.wide{width:100%}
+.done{font-size:13px;color:var(--muted);white-space:nowrap}
+.empty{font-size:13px;color:var(--muted);padding:4px 0}
+.event{border:1px solid var(--gold);border-radius:14px;padding:10px 14px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.event small{font-size:12px;color:var(--muted)}
+.settings{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.story{font-size:14px;border-left:2px solid var(--gold);padding-left:10px}
+.chance{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr);gap:8px;align-items:center}
+.slots{display:flex;flex-direction:column;gap:8px;min-width:0}
+.slot{width:100%;border:1px solid var(--line);border-radius:10px;padding:7px 8px;text-align:left;font-size:13px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.slot small{display:block;font-size:11px;color:var(--muted)}
+.slot.empty{border-style:dashed;color:var(--muted)}
+.slot.bad{border-color:var(--float)}
+.slot[aria-pressed="true"]{outline:2px solid var(--float);outline-offset:1px}
+.figure{display:block;width:84px;height:166px;color:var(--muted)}
+
+/* Map */
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cell{min-height:64px;border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;text-align:center;min-width:0;font-size:13px;line-height:1.2;overflow-wrap:anywhere}
+.cell b{font-weight:600}
+.cell small{font-size:11px;color:var(--muted)}
+.cell.fog{background:var(--line);color:var(--muted)}
+.cell.near{border:1px dashed var(--muted)}
+.cell.near b{font-family:var(--display);font-size:16px}
+.cell.open{background:var(--surface)}
+.cell.home{background:var(--ink);color:var(--bg);font-weight:600}
+.cell.goal{box-shadow:inset 0 0 0 1px var(--gold)}
+.cell[aria-pressed="true"]{outline:2px solid var(--float);outline-offset:1px}
+
+/* Tabs */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);margin-inline:-16px;padding-inline:6px}
+.tabs button{padding:14px 0 16px;font-size:12px;color:var(--muted);position:relative;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);font-weight:600}
+.tabs button[aria-selected="true"]::before{content:"";position:absolute;left:22%;right:22%;top:-1px;height:2px;background:var(--ink)}
+.tabs .badge{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--float);margin-left:3px;vertical-align:middle}
+
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:9px 14px;border-radius:10px;font-size:13px;width:max-content;max-width:calc(100% - 32px);text-align:center;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.on{opacity:1}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .water[data-state="bite"] .bobber{transform:translateY(16px)}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="fish" viewBox="0 0 40 24">
+    <path fill="currentColor" d="M2 12C8 3 21 2 29 12 21 22 8 21 2 12Z"/>
+    <path fill="currentColor" d="M27 12 38 4 35.500 12 38 20Z"/>
+    <path fill="currentColor" d="M13 5.500 19 1 22 6.200Z"/>
+    <circle cx="8.500" cy="10.500" r="1.400" fill="var(--surface)"/>
+  </symbol>
+</svg>
+
+<div class="app">
+  <header class="hud">
+    <div class="skill" id="fishBox">
+      <div class="skill-row"><span class="label">Рыболовство</span><span class="skill-num"><b id="fishNum">1</b><i id="fishBuff"></i></span></div>
+      <div class="bar"><i id="fishBar"></i></div>
+    </div>
+    <div class="skill" id="cookBox">
+      <div class="skill-row"><span class="label">Кулинария</span><span class="skill-num"><b id="cookNum">1</b></span></div>
+      <div class="bar"><i id="cookBar"></i></div>
+    </div>
+    <div class="gold" title="Золото"><span class="coin"></span><b id="goldNum">0</b></div>
+  </header>
+  <div class="goal" id="goal"></div>
+
+  <main>
+    <section class="panel" id="tab-home">
+      <div id="reportBox"></div>
+      <div class="list" id="homeList"></div>
+      <h2>Прототип</h2>
+      <div class="settings" id="settings"></div>
+    </section>
+
+    <section class="panel" id="tab-fish" hidden>
+      <div class="waters" id="waters"></div>
+      <button class="water" id="water" data-state="idle" aria-describedby="callout">
+        <span class="wtop"><span>Забросы <b id="energyNum">20</b> / <span id="energyMax">20</span></span><span id="energyTimer"></span></span>
+        <span class="wnote" id="wnote"></span>
+        <span class="rings"></span>
+        <span class="bobber"></span>
+        <span class="catch" id="catchCard" hidden></span>
+        <span class="callout" id="callout" aria-live="assertive">Нажми на воду, чтобы забросить</span>
+        <span class="castbar"><i id="castFill"></i></span>
+      </button>
+      <div class="bag" id="bag"></div>
+      <div class="food" id="food"></div>
+    </section>
+
+    <section class="panel" id="tab-cook" hidden>
+      <div class="list" id="cookList"></div>
+    </section>
+
+    <section class="panel" id="tab-map" hidden>
+      <div class="map" id="mapGrid"></div>
+      <div id="mapDetail"></div>
+    </section>
+
+    <section class="panel" id="tab-market" hidden>
+      <div class="event" id="merchantBox"></div>
+      <h2>Продать рыбу</h2>
+      <div class="list" id="fishSell"></div>
+      <h2>Продать блюда</h2>
+      <div class="list" id="dishSell"></div>
+      <h2>Рецепты</h2>
+      <div class="list" id="recipeList"></div>
+      <h2>Снасти</h2>
+      <div class="list" id="gearList"></div>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tabbtn-home" data-tab="home" aria-selected="true">Дом</button>
+    <button role="tab" id="tabbtn-fish" data-tab="fish" aria-selected="false">Рыбалка</button>
+    <button role="tab" id="tabbtn-cook" data-tab="cook" aria-selected="false">Кухня</button>
+    <button role="tab" id="tabbtn-map" data-tab="map" aria-selected="false">Карта</button>
+    <button role="tab" id="tabbtn-market" data-tab="market" aria-selected="false">Торговец</button>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/*LOGIC-START*/
+const MAX_SKILL = 50;
+const MAX_ENERGY = 20;            // запас забросов
+const REGEN_MS = 120000;          // заброс возвращается раз в 2 минуты
+const HOUR_MS = 240000;           // «час» клёва в прототипе длится 4 минуты
+const MERCHANT_EVERY = 300000;    // в прототипе торговец приходит каждые 5 минут…
+const MERCHANT_STAY = 120000;     // …и остаётся на 2 минуты; в игре это будет несколько визитов в день по часам
+const RESPAWN_MS = 90000;         // сколько герой возрождается после гибели
+const BUFF_CASTS = 10, BUFF_SKILL = 5, ENERGY_FOOD = 5;
+const HOT_BITE = 2.5, HOT_PRICE = 2;
+const PACK_SIZE = 3, BASE_POWER = 2, ARMOR_POWER = 3, MAX_ENCH = 5;
+const REPAIR_ORE = 2, REPAIR_GOLD = 40;
+const ENCH_COST = {armor:[4, 8, 12, 16, 20], rod:[3, 6, 9, 12, 15]};
+
+const FISH = {
+  karas:   {name:'Карась',       water:'pond',  weight:60, rare:false, price:1},
+  okun:    {name:'Окунь',        water:'pond',  weight:30, rare:false, price:3},
+  karp:    {name:'Золотой карп', water:'pond',  weight:10, rare:true,  price:15},
+  forel:   {name:'Форель',       water:'river', weight:55, rare:false, price:5},
+  shchuka: {name:'Щука',         water:'river', weight:33, rare:false, price:8},
+  osetr:   {name:'Осётр',        water:'river', weight:12, rare:true,  price:40},
+  sig:     {name:'Сиг',          water:'lake',  weight:55, rare:false, price:10},
+  sudak:   {name:'Судак',        water:'lake',  weight:33, rare:false, price:15},
+  taimen:  {name:'Таймень',      water:'lake',  weight:12, rare:true,  price:80},
+};
+// open — с какого рыболовства пускает; comfort — с какого рыба перестаёт срываться;
+// yellow / green / grey — с какого навыка улов здесь качает рыболовство реже
+const WATERS = {
+  pond:  {name:'Пруд',  open:1,  comfort:1,  yellow:12, green:20, grey:28},
+  river: {name:'Река',  open:15, comfort:25, yellow:27, green:35, grey:43},
+  lake:  {name:'Озеро', open:30, comfort:40, yellow:42, green:47, grey:51},
+};
+// power — сколько силы блюдо даёт герою, если взять его в дорогу
+const RECIPES = [
+  {id:'r1', name:'Жареный карась',  short:'Карась', needs:{karas:2},                skill:1,  cost:0,   sell:5,   power:1, yellow:10, green:18, grey:26},
+  {id:'r2', name:'Рыбацкая уха',    short:'Уха',    needs:{okun:1, karas:1},        skill:6,  cost:25,  sell:8,   power:1, yellow:15, green:23, grey:31, eat:'skill'},
+  {id:'r3', name:'Карп в меду',     short:'Карп',   needs:{karp:1, okun:1},         skill:12, cost:60,  sell:35,  power:2, yellow:24, green:32, grey:40, eat:'luck'},
+  {id:'r4', name:'Копчёная форель', short:'Форель', needs:{forel:2},                skill:18, cost:100, sell:20,  power:2, yellow:28, green:36, grey:44, eat:'energy'},
+  {id:'r5', name:'Щучьи котлеты',   short:'Котлеты',needs:{shchuka:1, forel:1},     skill:25, cost:180, sell:30,  power:3, yellow:35, green:42, grey:48},
+  {id:'r6', name:'Осётр по-царски', short:'Осётр',  needs:{osetr:1, shchuka:1},     skill:32, cost:300, sell:110, power:6, yellow:42, green:47, grey:51},
+  {id:'r7', name:'Сиг на углях',    short:'Сиг',    needs:{sig:2},                  skill:38, cost:350, sell:45,  power:4, yellow:48, green:51, grey:51},
+  {id:'r8', name:'Тройная уха',     short:'Тройная',needs:{sudak:1, sig:1, okun:1}, skill:44, cost:500, sell:90,  power:7, yellow:51, green:51, grey:51},
+];
+const GEAR = [
+  {id:'rod',  name:'Бамбуковая удочка', cost:150, text:'На подсечку на треть больше времени'},
+  {id:'lure', name:'Блесна',            cost:250, text:'Редкая рыба клюёт в полтора раза чаще'},
+];
+const EAT_TEXT = {
+  skill:  `+${BUFF_SKILL} к рыболовству на ${BUFF_CASTS} забросов`,
+  luck:   `редкая рыба клюёт вдвое чаще, ${BUFF_CASTS} забросов`,
+  energy: `+${ENERGY_FOOD} забросов сразу`,
+};
+const EAT_SHORT = {skill:`+${BUFF_SKILL} рыболовства`, luck:'удача ×2', energy:`+${ENERGY_FOOD} забросов`};
+const CHANCE = {orange:1, yellow:0.6, green:0.25, grey:0};          // кулинария: шанс роста за блюдо
+const FISH_CHANCE = {orange:0.5, yellow:0.3, green:0.12, grey:0};  // рыболовство: шанс роста за рыбу, редкая растит всегда
+const QUALITY_TEXT = {
+  orange:'Кулинария растёт всегда',
+  yellow:'Кулинария растёт часто',
+  green:'Кулинария растёт редко',
+  grey:'Кулинария больше не растёт',
+};
+
+/* карта серии: 3 колонки, 4 ряда, дом внизу по центру, цель наверху */
+const SERIES = {name:'Серия 1. Зажги маяк', goal:'mayak'};
+const CELLS = {
+  ozero:   {name:'Соляное озеро',     r:0, c:0, d:15, tier:3, text:'Берег белый от соли. В лодке у воды лежит завёрнутая в парусину линза для маяка.'},
+  mayak:   {name:'Маяк',              r:0, c:1, d:20, tier:4, goal:true, text:'Ты поднимаешься наверх, ставишь линзу и зажигаешь огонь. Луч проходит над морем, и вдали проступает берег, которого нет ни на одной карте.'},
+  bashnya: {name:'Сторожевая башня',  r:0, c:2, d:16, tier:3, text:'С башни смотрителю подавали знаки. На столе его последняя записка: «Ушёл за маслом, вернусь к огню».'},
+  krug:    {name:'Каменный круг',     r:1, c:0, d:11, tier:3, text:'Камни стоят кольцом. В центре выбита карта побережья, и маяк на ней обведён дважды.'},
+  pereval: {name:'Перевал',           r:1, c:1, d:12, tier:3, text:'С перевала видно море и тёмную башню маяка. Огня на ней нет уже много лет.'},
+  rudnik:  {name:'Рудник',            r:1, c:2, d:10, tier:3, text:'Заброшенный рудник. В вагонетке лежат слитки и записка: «Линзу отлили, осталось донести».'},
+  roscha:  {name:'Берёзовая роща',    r:2, c:0, d:7,  tier:2, text:'На стволах висят потухшие фонари. Кто-то отмечал ими дорогу к маяку.'},
+  brod:    {name:'Брод',              r:2, c:1, d:6,  tier:2, text:'Брод выложен плоскими камнями. На том берегу начинается тропа, по которой давно никто не ходил.'},
+  paseka:  {name:'Пасека',            r:2, c:2, d:8,  tier:2, text:'Ульи пусты, но в одном спрятан ключ с биркой «верхняя дверь».'},
+  zavod:   {name:'Заводь',            r:3, c:0, d:4,  tier:1, text:'Тихая заводь за камышами. На старых мостках кто-то вырезал стрелку на север и слово «свет».'},
+  home:    {name:'Дом',               r:3, c:1},
+  melnica: {name:'Мельница',          r:3, c:2, d:5,  tier:1, text:'Мельница давно стоит, но жернова целы. В ларе лежит журнал смотрителя маяка, последняя запись обрывается на полуслове.'},
+};
+const TIERS = {
+  1:{ms:60000,  gold:[15, 25],   ore:[1, 2], trophies:[1, 1]},
+  2:{ms:120000, gold:[40, 60],   ore:[1, 2], trophies:[1, 2]},
+  3:{ms:180000, gold:[90, 130],  ore:[2, 3], trophies:[2, 2]},
+  4:{ms:240000, gold:[250, 300], ore:[3, 4], trophies:[3, 3]},
+};
+const TROPHIES = {
+  1:['Ржавый крючок', 'Старый сапог', 'Погнутая подкова'],
+  2:['Потускневший амулет', 'Обломок клинка'],
+  3:['Резной оберег', 'Рунный камень'],
+};
+
+function newState(now = Date.now()){
+  return {fishing:1, cooking:1, gold:0, fish:{}, dishes:{}, known:['r1'], gear:[], water:'pond', caught:{},
+          casts:0, energy:MAX_ENERGY, energyAt:now, buffs:{skill:0, luck:0}, cur:{bonus:0, luck:false}, sound:true,
+          hero:{status:'home'}, opened:['home'], armor:{broken:false, ench:0}, rodEnch:0, ore:0, dust:0, trophies:[],
+          pack:[], report:null, fresh:null, won:false, deaths:0, merchantUntil:0, merchantSlot:0};
+}
+const recipeById = id => RECIPES.find(r => r.id === id);
+function colorOf(t, skill){
+  return skill < t.yellow ? 'orange' : skill < t.green ? 'yellow' : skill < t.grey ? 'green' : 'grey';
+}
+function effFishing(s){ return s.fishing + (s.buffs.skill > 0 ? BUFF_SKILL : 0); }
+function waterOpen(s, id){ return effFishing(s) >= WATERS[id].open; }
+function slipChance(s, waterId, bonus){
+  return Math.max(0, Math.min(0.4, (WATERS[waterId].comfort - (s.fishing + bonus)) * 0.04));
+}
+function hash(n){ n = Math.imul(n ^ (n >>> 15), 2246822519); n = Math.imul(n ^ (n >>> 13), 3266489917); return (n ^ (n >>> 16)) >>> 0; }
+function openFish(s){ return Object.keys(FISH).filter(f => s.fishing >= WATERS[FISH[f].water].open); }
+
+/* клёв часа: одна рыба клюёт чаще */
+function biteEvent(s, now = Date.now()){
+  const slot = Math.floor(now / HOUR_MS), pool = openFish(s);
+  return {fish: pool[hash(slot * 2 + 1) % pool.length], endsAt: (slot + 1) * HOUR_MS};
+}
+
+/* торговец: приходит по расписанию, заранее известно, что он купит вдвое дороже */
+function wantsFor(s, slot){
+  const pool = openFish(s).map(id => ({kind:'fish', id})).concat(s.known.map(id => ({kind:'dish', id})));
+  const a = pool[hash(slot * 3 + 1) % pool.length];
+  const rest = pool.filter(g => g !== a);
+  return rest.length ? [a, rest[hash(slot * 3 + 2) % rest.length]] : [a];
+}
+function merchant(s, now = Date.now()){
+  const slot = Math.floor(now / MERCHANT_EVERY), since = now - slot * MERCHANT_EVERY;
+  if (s.merchantUntil > now) return {present:true, endsAt:s.merchantUntil, wants:wantsFor(s, s.merchantSlot)};
+  if (since < MERCHANT_STAY) return {present:true, endsAt:slot * MERCHANT_EVERY + MERCHANT_STAY, wants:wantsFor(s, slot)};
+  return {present:false, nextAt:(slot + 1) * MERCHANT_EVERY, wants:wantsFor(s, slot + 1)};
+}
+function callMerchant(s, now = Date.now()){
+  s.merchantSlot = Math.floor(now / MERCHANT_EVERY) + 1;
+  s.merchantUntil = now + MERCHANT_STAY;
+}
+const wanted = (m, kind, id) => m.wants.some(g => g.kind === kind && g.id === id);
+
+/* забросы */
+function regen(s, now = Date.now()){
+  if (s.energy >= MAX_ENERGY) return;
+  const n = Math.floor((now - s.energyAt) / REGEN_MS);
+  if (n > 0){ s.energy = Math.min(MAX_ENERGY, s.energy + n); s.energyAt += n * REGEN_MS; }
+}
+function spendCast(s, now = Date.now()){
+  regen(s, now);
+  if (s.energy <= 0 || s.hero.status !== 'home') return false;
+  const wasFull = s.energy >= MAX_ENERGY;
+  s.energy--; s.casts++;
+  if (wasFull && s.energy < MAX_ENERGY) s.energyAt = now;
+  s.cur = {bonus: s.buffs.skill > 0 ? BUFF_SKILL : 0, luck: s.buffs.luck > 0};
+  if (s.buffs.skill > 0) s.buffs.skill--;
+  if (s.buffs.luck > 0) s.buffs.luck--;
+  return true;
+}
+function rollFish(s, waterId, rnd = Math.random, now = Date.now()){
+  const hot = biteEvent(s, now).fish;
+  const pool = Object.entries(FISH).filter(([, f]) => f.water === waterId).map(([id, f]) => {
+    let w = f.weight;
+    if (f.rare) w *= (s.cur.luck ? 2 : 1) * (s.gear.includes('lure') ? 1.5 : 1);
+    if (id === hot) w *= HOT_BITE;
+    return [id, w];
+  });
+  let x = rnd() * pool.reduce((a, [, w]) => a + w, 0);
+  for (const [id, w] of pool){ x -= w; if (x < 0) return id; }
+  return pool[0][0];
+}
+function hookWindow(s, fishId){
+  return (FISH[fishId].rare ? 640 : 880) * (s.gear.includes('rod') ? 1.35 : 1) * (1 + 0.08 * s.rodEnch);
+}
+function landFish(s, id, rnd = Math.random){
+  const f = FISH[id];
+  if (rnd() < slipChance(s, f.water, s.cur.bonus)) return {slipped:true};
+  const first = !s.caught[id];
+  s.fish[id] = (s.fish[id] || 0) + 1;
+  s.caught[id] = (s.caught[id] || 0) + 1;
+  const up = s.fishing < MAX_SKILL && (f.rare || rnd() < FISH_CHANCE[colorOf(WATERS[f.water], s.fishing)]);
+  if (up) s.fishing++;
+  return {slipped:false, up, first};
+}
+
+/* кухня */
+function canCook(s, r){
+  return Object.entries(r.needs).every(([f, n]) => (s.fish[f] || 0) >= n);
+}
+function cook(s, r, rnd = Math.random){
+  if (!s.known.includes(r.id) || !canCook(s, r)) return null;
+  for (const [f, n] of Object.entries(r.needs)) s.fish[f] -= n;
+  s.dishes[r.id] = (s.dishes[r.id] || 0) + 1;
+  const color = colorOf(r, s.cooking);
+  const up = s.cooking < MAX_SKILL && rnd() < CHANCE[color];
+  if (up) s.cooking++;
+  return {up, color};
+}
+function eat(s, id, now = Date.now()){
+  const r = recipeById(id);
+  if (!r || !r.eat || !(s.dishes[id] > 0)) return false;
+  s.dishes[id]--;
+  if (r.eat === 'skill') s.buffs.skill = BUFF_CASTS;
+  else if (r.eat === 'luck') s.buffs.luck = BUFF_CASTS;
+  else { regen(s, now); s.energy += ENERGY_FOOD; }
+  prunePack(s);
+  return true;
+}
+
+/* торговля: только пока торговец здесь */
+function priceOf(s, kind, id, now = Date.now()){
+  const base = kind === 'fish' ? FISH[id].price : recipeById(id).sell;
+  const m = merchant(s, now);
+  return base * (wanted(m, kind, id) ? HOT_PRICE : 1);
+}
+function sell(s, kind, id, n, now = Date.now()){
+  if (!merchant(s, now).present) return 0;
+  const store = kind === 'fish' ? s.fish : s.dishes;
+  n = Math.min(n, store[id] || 0);
+  if (n <= 0) return 0;
+  store[id] -= n;
+  const sum = n * priceOf(s, kind, id, now);
+  s.gold += sum;
+  prunePack(s);
+  return sum;
+}
+function recipeStatus(s, r){
+  if (s.known.includes(r.id)) return 'known';
+  if (s.cooking < r.skill) return 'locked';
+  return s.gold >= r.cost ? 'buyable' : 'poor';
+}
+function buyRecipe(s, r, now = Date.now()){
+  if (!merchant(s, now).present || recipeStatus(s, r) !== 'buyable') return false;
+  s.gold -= r.cost; s.known.push(r.id); return true;
+}
+function buyGear(s, g, now = Date.now()){
+  if (!merchant(s, now).present || s.gear.includes(g.id) || s.gold < g.cost) return false;
+  s.gold -= g.cost; s.gear.push(g.id); return true;
+}
+
+/* герой, карта и вылазки */
+function cellState(s, id){
+  if (id === 'home') return 'home';
+  if (s.opened.includes(id)) return 'open';
+  const c = CELLS[id];
+  const near = s.opened.some(o => Math.abs(CELLS[o].r - c.r) + Math.abs(CELLS[o].c - c.c) === 1);
+  return near ? 'near' : 'fog';
+}
+function prunePack(s){
+  const left = Object.assign({}, s.dishes);
+  s.pack = s.pack.filter(id => (left[id] || 0) > 0 && left[id]--).slice(0, PACK_SIZE);
+}
+function packLeft(s, id){ return (s.dishes[id] || 0) - s.pack.filter(x => x === id).length; }
+function heroPower(s, pack = s.pack){
+  const parts = [{label:'Основа', v:BASE_POWER}];
+  parts.push(s.armor.broken ? {label:'Броня сломана', v:0} : {label:'Броня', v:ARMOR_POWER});
+  if (!s.armor.broken && s.armor.ench) parts.push({label:'Чары', v:s.armor.ench});
+  parts.push({label:'Навыки', v:Math.floor(s.fishing / 10) + Math.floor(s.cooking / 10)});
+  const food = pack.reduce((a, id) => a + recipeById(id).power, 0);
+  if (food) parts.push({label:'Припасы', v:food});
+  return {parts, total: parts.reduce((a, p) => a + p.v, 0)};
+}
+function tripChance(s, id, pack = s.pack){
+  return Math.max(5, Math.min(95, 50 + (heroPower(s, pack).total - CELLS[id].d) * 10));
+}
+// чем меньше шанс, тем чаще неудача заканчивается гибелью
+const deathRisk = chance => Math.round((100 - chance) * (100 - chance) / 100);
+function depart(s, id, now = Date.now()){
+  const st = cellState(s, id);
+  if (s.hero.status !== 'home' || (st !== 'near' && st !== 'open')) return false;
+  prunePack(s);
+  const chance = tripChance(s, id);
+  for (const d of s.pack) s.dishes[d]--;
+  s.pack = []; s.fresh = null;
+  s.hero = {status:'away', target:id, chance, start:now, until:now + TIERS[CELLS[id].tier].ms};
+  return true;
+}
+const between = (rnd, [a, b]) => a + Math.floor(rnd() * (b - a + 1));
+function resolveHero(s, now = Date.now(), rnd = Math.random){
+  const h = s.hero;
+  if (h.status === 'dead' && now >= h.until){ s.hero = {status:'home'}; return 'revived'; }
+  if (h.status !== 'away' || now < h.until) return null;
+  const id = h.target, cell = CELLS[id], tier = TIERS[cell.tier];
+  const roll = 1 + Math.floor(rnd() * 100);
+  if (roll <= h.chance){
+    const first = !s.opened.includes(id);
+    const loot = {gold:between(rnd, tier.gold), ore:between(rnd, tier.ore), trophies:[]};
+    const names = TROPHIES[Math.min(3, cell.tier)];
+    for (let i = between(rnd, tier.trophies); i > 0; i--) loot.trophies.push({n:names[Math.floor(rnd() * names.length)], t:Math.min(3, cell.tier)});
+    s.gold += loot.gold; s.ore += loot.ore; s.trophies.push(...loot.trophies);
+    s.fresh = {gold:loot.gold, ore:loot.ore, names:loot.trophies.map(t => t.n)};
+    if (first) s.opened.push(id);
+    if (first && cell.goal) s.won = true;
+    s.hero = {status:'home'};
+    s.report = {outcome:'win', id, roll, chance:h.chance, first, loot};
+    return 'win';
+  }
+  if (rnd() * 100 < 100 - h.chance){
+    s.armor.broken = true; s.buffs = {skill:0, luck:0}; s.deaths++;
+    s.hero = {status:'dead', start:now, until:now + RESPAWN_MS};
+    s.report = {outcome:'death', id, roll, chance:h.chance};
+    return 'death';
+  }
+  s.hero = {status:'home'};
+  s.report = {outcome:'retreat', id, roll, chance:h.chance};
+  return 'retreat';
+}
+function disenchant(s, name){
+  const take = s.trophies.filter(t => !name || t.n === name);
+  if (!take.length) return 0;
+  const dust = take.reduce((a, t) => a + t.t * 2, 0);
+  s.trophies = s.trophies.filter(t => name && t.n !== name);
+  s.dust += dust;
+  return dust;
+}
+function enchLevel(s, what){ return what === 'armor' ? s.armor.ench : s.rodEnch; }
+function enchant(s, what){
+  const lvl = enchLevel(s, what);
+  if (lvl >= MAX_ENCH || (what === 'armor' && s.armor.broken) || s.dust < ENCH_COST[what][lvl]) return false;
+  s.dust -= ENCH_COST[what][lvl];
+  if (what === 'armor') s.armor.ench++; else s.rodEnch++;
+  return true;
+}
+function repair(s, how){
+  if (!s.armor.broken) return false;
+  if (how === 'ore'){ if (s.ore < REPAIR_ORE) return false; s.ore -= REPAIR_ORE; }
+  else { if (s.gold < REPAIR_GOLD) return false; s.gold -= REPAIR_GOLD; }
+  s.armor.broken = false;
+  return true;
+}
+/*LOGIC-END*/
+
+const $ = id => document.getElementById(id);
+const KEY = 'klev-v2';
+let state = newState();
+let tab = 'home';
+let sel = null;   // выбранная клетка карты
+
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+
+/* ---------- отклик: звук, вибрация, тосты ---------- */
+let ac = null;
+function tone(freq, dur, opts = {}){
+  if (!state.sound) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    const t = ac.currentTime + (opts.delay || 0), o = ac.createOscillator(), g = ac.createGain();
+    o.type = opts.type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (opts.to) o.frequency.exponentialRampToValueAtTime(opts.to, t + dur);
+    g.gain.setValueAtTime(opts.gain || 0.06, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+const sfx = {
+  cast(){ tone(520, .16, {to:180}); },
+  bite(){ tone(880, .09, {type:'triangle', gain:.09}); tone(880, .09, {type:'triangle', gain:.09, delay:.12}); },
+  catch(rare){ tone(523, .1); tone(659, .1, {delay:.08}); tone(rare ? 1047 : 784, .2, {delay:.16}); },
+  miss(){ tone(200, .22, {to:110, type:'triangle'}); },
+  cook(){ tone(330, .08, {type:'triangle'}); },
+  up(){ tone(660, .1, {delay:.06}); tone(990, .18, {delay:.14}); },
+  coin(){ tone(1320, .07, {type:'square', gain:.03}); tone(1760, .12, {type:'square', gain:.03, delay:.06}); },
+  buy(){ tone(440, .1); tone(587, .1, {delay:.09}); tone(880, .22, {delay:.18}); },
+  eat(){ tone(300, .08, {type:'triangle'}); tone(450, .14, {type:'triangle', delay:.09}); },
+  go(){ tone(392, .12); tone(523, .2, {delay:.1}); },
+  dust(){ tone(1500, .05, {type:'triangle', gain:.04}); tone(2000, .09, {type:'triangle', gain:.04, delay:.05}); },
+};
+function buzz(p){ try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+let toastTimer = null;
+function toast(text){
+  const el = $('toast'); el.textContent = text; el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2000);
+}
+function pop(el){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+function plusOne(box){
+  const p = document.createElement('span'); p.className = 'plus'; p.textContent = '+1';
+  $(box).appendChild(p); setTimeout(() => p.remove(), 900);
+}
+const fishSvg = id => `<svg class="fish" viewBox="0 0 40 24" style="color:var(--f-${id})" aria-hidden="true"><use href="#fish"/></svg>`;
+const clock = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const goodName = g => g.kind === 'fish' ? FISH[g.id].name : recipeById(g.id).name;
+const placeName = id => cellState(state, id) === 'open' || CELLS[id].goal ? CELLS[id].name : 'неразведанное место';
+function heroStatus(now = Date.now()){
+  const h = state.hero;
+  if (h.status === 'away') return `Герой на вылазке: ${placeName(h.target)}, вернётся через ${clock(h.until - now)}`;
+  if (h.status === 'dead') return `Герой возрождается, вернётся через ${clock(h.until - now)}`;
+  return 'Герой дома и готов к вылазке';
+}
+
+/* ---------- рыбалка ---------- */
+const IDLE_TEXT = 'Нажми на воду, чтобы забросить';
+const CAST_MS = 10000;   // заброс длится 10 секунд, рыба клюёт в случайный момент внутри них
+let phase = 'idle', timer = null, pending = null, lockUntil = 0, castStart = 0, raf = 0;
+function runBar(){
+  $('castFill').style.width = Math.min(100, (performance.now() - castStart) / CAST_MS * 100) + '%';
+  if (phase === 'wait' || phase === 'bite') raf = requestAnimationFrame(runBar);
+}
+function setPhase(p, text){
+  phase = p;
+  const w = $('water'); w.dataset.state = p;
+  if (p !== 'bite') delete w.dataset.rare;
+  $('callout').textContent = text;
+  if (p !== 'caught') $('catchCard').hidden = true;
+}
+function bestWater(){ return Object.keys(WATERS).filter(id => waterOpen(state, id)).pop(); }
+function blockedText(now = Date.now()){
+  if (state.hero.status !== 'home') return heroStatus(now) + '. Рыбачить пока некому';
+  if (state.energy <= 0) return `Забросы кончились. Следующий через ${clock(state.energyAt + REGEN_MS - now)}`;
+  return '';
+}
+function cast(){
+  clearTimeout(timer);
+  if (!waterOpen(state, state.water)){
+    state.water = bestWater();
+    toast('Баф закончился, для того водоёма мало рыболовства'); renderAll();
+  }
+  if (!spendCast(state)){ setPhase('idle', blockedText()); sfx.miss(); return; }
+  const w = $('water');
+  w.style.setProperty('--bx', (18 + Math.random() * 64).toFixed(1) + '%');
+  w.style.setProperty('--by', (46 + Math.random() * 18).toFixed(1) + '%');
+  setPhase('wait', 'Жди поклёвки. Она случится, пока идёт полоса');
+  sfx.cast();
+  renderHud(); renderWaterInfo();
+  pending = rollFish(state, state.water);
+  castStart = performance.now(); cancelAnimationFrame(raf); runBar();
+  timer = setTimeout(bite, 1000 + Math.random() * (CAST_MS - 1200 - hookWindow(state, pending)));
+}
+function bite(){
+  const f = FISH[pending];
+  setPhase('bite', f.rare ? 'Крупная! Подсекай!' : 'Подсекай!');
+  if (f.rare) $('water').dataset.rare = '1';
+  sfx.bite(); buzz(f.rare ? [40, 40, 40] : 30);
+  timer = setTimeout(() => miss('Сорвалась. Нажми, чтобы забросить ещё'), hookWindow(state, pending));
+}
+function hook(){
+  clearTimeout(timer);
+  const id = pending, f = FISH[id];
+  pending = null;
+  const res = landFish(state, id);
+  if (res.slipped) return miss(`Ушла у самого берега. В этом водоёме рыба срывается, пока рыболовство ниже ${WATERS[f.water].comfort}`);
+  const notes = [f.rare ? 'Редкая' : '', res.first ? 'новая рыба' : '', res.up ? 'рыболовство +1' : ''].filter(Boolean);
+  const card = $('catchCard');
+  card.className = 'catch' + (f.rare ? ' rare' : '');
+  card.innerHTML = `${fishSvg(id)}<span class="catch-name">${f.name}</span><span class="catch-sub">${notes.length ? notes.join(' · ') : 'В садке: ' + state.fish[id]}</span>`;
+  card.hidden = false;
+  setPhase('caught', 'Нажми, чтобы забросить ещё');
+  sfx.catch(f.rare); buzz(f.rare ? [20, 30, 60] : 15);
+  if (res.up){ sfx.up(); plusOne('fishBox'); }
+  lockUntil = performance.now() + 260;
+  save(); renderHud(); renderWaters(); renderBag(); renderBadges();
+  if (res.up) pop($('fishNum'));
+}
+function miss(text){
+  clearTimeout(timer); pending = null;
+  setPhase('miss', text);
+  sfx.miss();
+  lockUntil = performance.now() + 320;
+  save();
+}
+function tapWater(){
+  if (performance.now() < lockUntil) return;
+  if (phase === 'wait') miss('Рано, рыба ушла. Нажми, чтобы забросить ещё');
+  else if (phase === 'bite') hook();
+  else cast();
+}
+function stopFishing(){
+  clearTimeout(timer); pending = null;
+  setPhase('idle', IDLE_TEXT);
+}
+
+/* ---------- отрисовка ---------- */
+function renderHud(){
+  $('fishNum').textContent = state.fishing;
+  $('fishBuff').textContent = state.buffs.skill > 0 ? '+' + BUFF_SKILL : '';
+  $('fishBar').style.width = ((state.fishing - 1) / (MAX_SKILL - 1) * 100) + '%';
+  $('cookNum').textContent = state.cooking;
+  $('cookBar').style.width = ((state.cooking - 1) / (MAX_SKILL - 1) * 100) + '%';
+  $('goldNum').textContent = state.gold;
+  $('goal').textContent = goalText();
+}
+const PLACES = Object.keys(CELLS).length - 1;
+function goalText(now = Date.now()){
+  if (state.hero.status !== 'home') return heroStatus(now);
+  if (state.won) return 'Серия 1 пройдена. Маяк горит';
+  return `${SERIES.name}. Разведано ${state.opened.length - 1} из ${PLACES}`;
+}
+function renderWaters(){
+  $('waters').innerHTML = Object.entries(WATERS).map(([id, w]) =>
+    waterOpen(state, id)
+      ? `<button id="water-${id}" data-water="${id}" aria-pressed="${state.water === id}">${w.name}</button>`
+      : `<button id="water-${id}" disabled>${w.name}<small>с рыболовства ${w.open}</small></button>`
+  ).join('');
+}
+function renderWaterInfo(){
+  const now = Date.now();
+  regen(state, now);
+  $('energyNum').textContent = state.energy;
+  $('energyTimer').textContent = state.energy < MAX_ENERGY ? '+1 через ' + clock(state.energyAt + REGEN_MS - now) : '';
+  const ev = biteEvent(state, now), hot = FISH[ev.fish], notes = [];
+  notes.push(`Этот час лучше клюёт: ${hot.name}${hot.water !== state.water ? ' (' + WATERS[hot.water].name.toLowerCase() + ')' : ''}, ещё ${clock(ev.endsAt - now)}`);
+  const slip = slipChance(state, state.water, state.buffs.skill > 0 ? BUFF_SKILL : 0);
+  if (slip > 0) notes.push(`Срывается ${Math.round(slip * 100)}% рыбы, пока рыболовство ниже ${WATERS[state.water].comfort}`);
+  if (state.buffs.skill > 0) notes.push(`Уха: +${BUFF_SKILL} к рыболовству, забросов: ${state.buffs.skill}`);
+  if (state.buffs.luck > 0) notes.push(`Удача: редкая клюёт вдвое чаще, забросов: ${state.buffs.luck}`);
+  $('wnote').innerHTML = notes.map(n => `<span>${n}</span>`).join('');
+  if (phase === 'wait' || phase === 'bite') return;
+  const blocked = blockedText(now);
+  if (blocked) $('callout').textContent = blocked;
+  else if (phase === 'idle' && $('callout').textContent !== IDLE_TEXT) $('callout').textContent = IDLE_TEXT;
+}
+function renderBag(){
+  $('bag').innerHTML = Object.entries(FISH).filter(([, f]) => f.water === state.water).map(([id, f]) => {
+    if (!state.caught[id]) return `<div class="tile"><span class="tile-q">?</span><span class="tile-name">${f.rare ? 'Редкая, ещё не поймана' : 'Ещё не поймана'}</span></div>`;
+    return `<div class="tile${f.rare ? ' rare' : ''}">${fishSvg(id)}<span class="tile-name">${f.name}</span><span class="tile-count">${state.fish[id] || 0}</span></div>`;
+  }).join('');
+  const foods = RECIPES.filter(r => r.eat && state.dishes[r.id] > 0);
+  $('food').innerHTML = foods.map(r => `<button id="eatq-${r.id}" data-eat="${r.id}" aria-label="Съесть: ${r.name}, ${EAT_TEXT[r.eat]}"><small>Съесть</small><b>${r.short} ×${state.dishes[r.id]}</b>${EAT_SHORT[r.eat]}</button>`).join('');
+}
+function needsHtml(r){
+  return Object.entries(r.needs).map(([f, n]) => {
+    const have = state.fish[f] || 0;
+    return `<span class="need${have < n ? ' lack' : ''}">${fishSvg(f)}${FISH[f].name} ×${n}<span class="have">есть ${have}</span></span>`;
+  }).join('');
+}
+function renderCook(){
+  const known = RECIPES.filter(r => state.known.includes(r.id)).reverse();
+  $('cookList').innerHTML = known.map(r => {
+    const c = colorOf(r, state.cooking), n = state.dishes[r.id] || 0;
+    return `<div class="card">
+      <div class="card-head"><span class="card-name">${r.name}</span><span class="stock">${n ? 'Готово: ' + n : ''}</span></div>
+      <div class="quality"><span class="dot q-${c}"></span>${state.cooking >= MAX_SKILL ? 'Кулинария на максимуме' : QUALITY_TEXT[c]}</div>
+      <div class="needs">${needsHtml(r)}</div>
+      <span class="meta">В дорогу: +${r.power} к силе героя. ${r.eat ? 'Если съесть: ' + EAT_TEXT[r.eat] : 'Цена у торговца ' + r.sell}</span>
+      <div class="row end"><span class="btns">${r.eat ? `<button class="btn quiet" id="eat-${r.id}" data-eat="${r.id}" ${n ? '' : 'disabled'}>Съесть</button>` : ''}
+      <button class="btn" id="cook-${r.id}" data-cook="${r.id}" ${canCook(state, r) ? '' : 'disabled'}>Приготовить</button></span></div>
+    </div>`;
+  }).join('');
+}
+
+/* дом */
+function rank(){
+  const n = state.opened.length - 1;
+  return state.won ? 'Смотритель маяка' : n >= 6 ? 'Разведчик' : n >= 3 ? 'Следопыт' : 'Новичок';
+}
+function reportHtml(rep){
+  const cell = CELLS[rep.id], dice = `Бросок ${rep.roll}, нужно было не больше ${rep.chance}.`;
+  if (rep.outcome === 'win'){
+    const groups = {}; rep.loot.trophies.forEach(t => groups[t.n] = (groups[t.n] || 0) + 1);
+    const tro = Object.entries(groups).map(([n, k]) => n + (k > 1 ? ' ×' + k : '')).join(', ');
+    return `<div class="card hot"><span class="card-name">${rep.first ? 'Разведано: ' : 'Вылазка удалась: '}${cell.name}</span>
+      <span class="meta">${dice}</span>
+      ${rep.first ? `<span class="story">${cell.text}</span>` : ''}
+      ${rep.first && cell.goal ? '<span class="card-name">Серия пройдена. Следующая серия откроет берег за морем.</span>' : ''}
+      <span class="meta">В рюкзаке прибавилось: ${rep.loot.gold} золота, руда ×${rep.loot.ore}${tro ? ', ' + tro : ''}</span>
+      <div class="row end"><button class="btn" id="report-ok" data-report="ok">Понятно</button></div></div>`;
+  }
+  if (rep.outcome === 'death')
+    return `<div class="card hot"><span class="card-name">Герой погиб: ${placeName(rep.id)}</span>
+      <span class="meta">${dice}</span>
+      <span class="meta">Броня сломана, бафы сброшены, припасы потрачены. Навыки, золото и находки остались. Броню нужно починить, иначе она не даёт силы.</span>
+      <div class="row end"><button class="btn" id="report-ok" data-report="ok">Понятно</button></div></div>`;
+  return `<div class="card hot"><span class="card-name">Пришлось отступить: ${placeName(rep.id)}</span>
+    <span class="meta">${dice}</span>
+    <span class="meta">Герой вернулся целым, но припасы потрачены. Подготовься лучше и попробуй снова.</span>
+    <div class="row end"><button class="btn" id="report-ok" data-report="ok">Понятно</button></div></div>`;
+}
+function enchButton(what){
+  const lvl = enchLevel(state, what);
+  if (lvl >= MAX_ENCH) return '<span class="done">Чары на максимуме</span>';
+  const cost = ENCH_COST[what][lvl], off = state.dust < cost || (what === 'armor' && state.armor.broken);
+  return `<button class="btn" id="ench-${what}" data-ench="${what}" ${off ? 'disabled' : ''}>Зачаровать за ${cost} пыли</button>`;
+}
+let slotSel = 'armor';   // выбранный слот снаряжения
+const SLOTS = {
+  left:  [['helm', 'Шлем'], ['shoulders', 'Наплечники'], ['armor', 'Броня']],
+  right: [['amulet', 'Амулет'], ['rod', 'Удочка'], ['boots', 'Сапоги']],
+};
+const slotName = id => SLOTS.left.concat(SLOTS.right).find(x => x[0] === id)[1];
+function slotHtml([id, name]){
+  const a = state.armor;
+  let sub = 'пусто', cls = ' empty';
+  if (id === 'armor'){ sub = a.broken ? 'сломана' : `целая · чары ${a.ench}`; cls = a.broken ? ' bad' : ''; }
+  if (id === 'rod'){ sub = `${state.gear.includes('rod') ? 'бамбук' : 'орех'} · чары ${state.rodEnch}`; cls = ''; }
+  return `<button class="slot${cls}" id="slot-${id}" data-slot="${id}" aria-pressed="${slotSel === id}">${name}<small>${sub}</small></button>`;
+}
+// очертания героя: пунктир там, где пусто, сплошная заливка там, где что-то надето
+function figureSvg(){
+  const broken = state.armor.broken;
+  return `<svg class="figure" viewBox="0 0 96 190" aria-hidden="true">
+    <circle cx="48" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="5 5"/>
+    <path d="M22 62Q48 46 74 62L68 118H28Z" fill="${broken ? 'none' : 'var(--line)'}" stroke="${broken ? 'var(--float)' : 'currentColor'}" stroke-width="3" stroke-linejoin="round"${broken ? ' stroke-dasharray="5 5"' : ''}/>
+    <path d="M22 62L11 110M74 62L85 110M36 118L32 180M60 118L64 180" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 5"/>
+    <path d="M85 112L92 34" fill="none" stroke="var(--fishbar)" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+function slotDetail(){
+  const a = state.armor;
+  if (slotSel === 'armor') return `<div class="card">
+      <div class="card-head"><span class="card-name">Броня</span><span class="stock">${a.broken ? 'Сломана' : 'Целая'} · чары ${a.ench} из ${MAX_ENCH}</span></div>
+      <span class="meta">Целая броня даёт ${ARMOR_POWER} силы и ещё по 1 за каждый уровень чар. Ломается, если герой гибнет.</span>
+      <div class="row end"><span class="btns">${a.broken
+        ? `<button class="btn" id="repair-ore" data-repair="ore" ${state.ore < REPAIR_ORE ? 'disabled' : ''}>Починить: руда ×${REPAIR_ORE}</button>
+           <button class="btn quiet" id="repair-gold" data-repair="gold" ${state.gold < REPAIR_GOLD ? 'disabled' : ''}>За ${REPAIR_GOLD} золота</button>`
+        : enchButton('armor')}</span></div>
+    </div>`;
+  if (slotSel === 'rod') return `<div class="card">
+      <div class="card-head"><span class="card-name">${state.gear.includes('rod') ? 'Бамбуковая удочка' : 'Ореховая удочка'}</span><span class="stock">чары ${state.rodEnch} из ${MAX_ENCH}</span></div>
+      <span class="meta">Каждый уровень чар даёт на 8% больше времени на подсечку.</span>
+      <div class="row end">${enchButton('rod')}</div>
+    </div>`;
+  return `<div class="card">
+      <div class="card-head"><span class="card-name">${slotName(slotSel)}</span><span class="stock">пусто</span></div>
+      <span class="meta">Слот свободен. Снаряжение для него появится вместе с кузнечным делом.</span>
+    </div>`;
+}
+function buffsHtml(){
+  const b = [];
+  if (state.buffs.skill > 0) b.push(`Уха: +${BUFF_SKILL} рыболовства · забросов ${state.buffs.skill}`);
+  if (state.buffs.luck > 0) b.push(`Удача: редкая рыба ×2 · забросов ${state.buffs.luck}`);
+  return b.length ? b.map(x => `<span class="need">${x}</span>`).join('') : '<span class="meta">Бафов нет. Их даёт еда с кухни.</span>';
+}
+function renderHome(){
+  $('reportBox').innerHTML = state.report ? reportHtml(state.report) : '';
+  const p = heroPower(state, []), fr = state.fresh, groups = {};
+  state.trophies.forEach(t => (groups[t.n] = groups[t.n] || {k:0, t:t.t}).k++);
+  const trophies = Object.entries(groups).map(([n, g]) =>
+    `<div class="row"><span>${n}${g.k > 1 ? ' ×' + g.k : ''}<br><span class="meta">${fr && fr.names.includes(n) ? '<b>новое</b> · ' : ''}даст пыли: ${g.k * g.t * 2}</span></span>
+     <button class="btn quiet" data-dust="${n}">Распылить</button></div>`).join('');
+  const dishes = RECIPES.filter(r => state.dishes[r.id] > 0).map(r => `<span class="need">${r.name} ×${state.dishes[r.id]}</span>`).join('');
+  const fish = Object.keys(FISH).filter(id => state.fish[id] > 0).map(id => `<span class="need">${fishSvg(id)}${FISH[id].name} ×${state.fish[id]}</span>`).join('');
+  $('homeList').innerHTML = `
+    <div class="card">
+      <div class="card-head"><span class="card-name">${rank()}</span><span class="stock">Сила ${p.total}</span></div>
+      <div class="hero"><div class="slots">${SLOTS.left.map(slotHtml).join('')}</div>${figureSvg()}<div class="slots">${SLOTS.right.map(slotHtml).join('')}</div></div>
+      <div class="needs">${buffsHtml()}</div>
+      <span class="meta">Сила складывается так: ${p.parts.filter(x => x.v).map(x => x.label.toLowerCase() + ' ' + x.v).join(', ')}.${state.armor.broken ? ' Сломанная броня силы не даёт.' : ''}</span>
+      <span class="meta" id="heroLine">${heroStatus()}</span>
+      ${state.hero.status !== 'home' ? '<div class="bar"><i id="heroBar"></i></div>' : ''}
+      <div class="row end"><button class="btn" id="go-map" data-tab="map">К карте</button></div>
+    </div>
+    ${slotDetail()}
+    <div class="card">
+      <div class="card-head"><span class="card-name">Рюкзак</span><span class="stock">Руда ${state.ore} · Пыль ${state.dust}</span></div>
+      ${fr ? `<span class="meta"><b>С последней вылазки: +${fr.gold} золота, руда ×${fr.ore}${fr.names.length ? ', ' + [...new Set(fr.names)].join(', ') : ''}</b></span>` : ''}
+      ${trophies || '<span class="meta">Трофеев нет. Герой приносит их с вылазок, а распылённые трофеи дают пыль для чар.</span>'}
+      ${state.trophies.length > 1 ? `<button class="btn wide" id="dust-all" data-dust="*">Распылить все</button>` : ''}
+      <span class="meta">Еда</span>
+      <div class="needs">${dishes || '<span class="meta">пусто</span>'}</div>
+      <span class="meta">Улов</span>
+      <div class="needs">${fish || '<span class="meta">пусто</span>'}</div>
+    </div>`;
+  if (!$('settings').dataset.open) $('settings').innerHTML =
+    `<button class="btn quiet" id="set-sound" data-set="sound">${state.sound ? 'Звук включён' : 'Звук выключен'}</button>
+     <button class="btn quiet" id="set-refill" data-set="refill">Вернуть забросы</button>
+     <button class="btn quiet" id="set-skip" data-set="skip">Пропустить ожидание героя</button>
+     <button class="btn quiet" id="set-call" data-set="call">Позвать торговца</button>
+     <button class="btn quiet" id="set-reset" data-set="reset">Начать заново</button>`;
+}
+
+/* карта */
+function defaultCell(){
+  if (state.hero.status === 'away') return state.hero.target;
+  const near = Object.keys(CELLS).filter(id => cellState(state, id) === 'near').sort((x, y) => CELLS[x].d - CELLS[y].d);
+  return near[0] || SERIES.goal;
+}
+function cellHtml(id){
+  const c = CELLS[id], st = cellState(state, id);
+  if (st === 'home') return `<button class="cell home" id="cell-home" disabled>Дом</button>`;
+  const here = state.hero.status === 'away' && state.hero.target === id;
+  let top = '', sub = 'туман';
+  if (st === 'open'){ top = c.name; sub = c.goal ? 'огонь горит' : 'разведано'; }
+  else if (c.goal){ top = c.name; sub = st === 'near' ? `цель · сложность ${c.d}` : 'цель серии'; }
+  else if (st === 'near'){ top = '?'; sub = `сложность ${c.d}`; }
+  return `<button class="cell ${st}${c.goal ? ' goal' : ''}" id="cell-${id}" data-cell="${id}" aria-pressed="${sel === id}" ${st === 'fog' ? 'disabled' : ''}>${top ? `<b>${top}</b>` : ''}<small>${here ? 'герой здесь' : sub}</small></button>`;
+}
+function renderMap(){
+  prunePack(state);
+  if (!sel || cellState(state, sel) === 'fog' || sel === 'home') sel = defaultCell();
+  $('mapGrid').innerHTML = Object.keys(CELLS).sort((x, y) => CELLS[x].r - CELLS[y].r || CELLS[x].c - CELLS[y].c).map(cellHtml).join('');
+  const c = CELLS[sel], st = cellState(state, sel), h = state.hero, tier = TIERS[c.tier];
+  const p = heroPower(state), chance = tripChance(state, sel);
+  const packed = state.pack.map((id, i) => `<button class="need" id="unpack-${i}" data-unpack="${i}" aria-label="Убрать из припасов: ${recipeById(id).name}">${recipeById(id).name} +${recipeById(id).power} ✕</button>`).join('');
+  const addable = state.pack.length < PACK_SIZE ? RECIPES.filter(r => packLeft(state, r.id) > 0).map(r =>
+    `<button class="need add" id="pack-${r.id}" data-pack="${r.id}">+ ${r.name} (+${r.power}), есть ${packLeft(state, r.id)}</button>`).join('') : '';
+  const goLabel = h.status === 'away' ? 'Герой уже в пути' : h.status === 'dead' ? 'Герой возрождается' : `Отправиться · ${clock(tier.ms)}`;
+  $('mapDetail').innerHTML = `<div class="card">
+    <div class="card-head"><span class="card-name">${st === 'open' || c.goal ? c.name : 'Неразведанное место'}</span><span class="stock">Сложность ${c.d}</span></div>
+    ${st === 'open' ? `<span class="story">${c.text}</span><span class="meta">Сюда можно ходить повторно за золотом, рудой и трофеями.</span>` : ''}
+    <div class="row"><span><span class="chance">${chance}%</span><br><span class="meta">шанс успеха</span></span>
+      <span class="meta" style="text-align:right">Сила ${p.total} против сложности ${c.d}.<br>Риск гибели ${deathRisk(chance)}%.</span></div>
+    <span class="meta">Каждое очко силы меняет шанс на 10%. Припасы в дорогу, до ${PACK_SIZE} блюд, съедаются при выходе:</span>
+    <div class="needs">${packed || '<span class="meta">пока ничего не взято</span>'}</div>
+    ${addable ? `<div class="needs">${addable}</div>` : ''}
+    <button class="btn wide" id="depart" data-depart="${sel}" ${h.status === 'home' ? '' : 'disabled'}>${goLabel}</button>
+  </div>`;
+}
+
+/* торговец */
+function sellRow(kind, id, name, n, m){
+  const hot = wanted(m, kind, id), p = priceOf(state, kind, id), off = m.present ? '' : 'disabled';
+  const one = n > 1 ? `<button class="btn quiet" id="sell1-${kind}-${id}" data-sell="${kind}:${id}:1" aria-label="Продать одну: ${name}" ${off}>Одну</button>` : '';
+  return `<div class="card${hot ? ' hot' : ''}"><div class="row">
+    <span><span class="card-name">${name} ×${n}</span><br><span class="meta">${hot ? `<b>по ${p}, вдвое дороже</b>` : 'по ' + p}</span></span>
+    <span class="btns">${one}<button class="btn" id="sell-${kind}-${id}" data-sell="${kind}:${id}:all" aria-label="Продать все: ${name}" ${off}>Все за ${p * n}</button></span></div></div>`;
+}
+function renderMarket(){
+  const now = Date.now(), m = merchant(state, now), wants = m.wants.map(goodName).join(' и '), off = m.present ? '' : 'disabled';
+  $('merchantBox').innerHTML = (m.present
+    ? `<span><b>Торговец здесь</b>, уйдёт через <span id="merchantTimer">${clock(m.endsAt - now)}</span></span><span>Платит вдвое за: ${wants}</span>`
+    : `<span>Торговец придёт через <span id="merchantTimer">${clock(m.nextAt - now)}</span></span><span>Ему будут нужны: ${wants}. Заплатит вдвое.</span>`)
+    + '<small>Продать улов и купить рецепты можно только при нём. В прототипе он приходит каждые 5 минут на 2 минуты.</small>';
+  const fish = Object.keys(FISH).filter(id => state.fish[id] > 0).map(id => sellRow('fish', id, FISH[id].name, state.fish[id], m));
+  $('fishSell').innerHTML = fish.join('') || '<div class="empty">Садок пуст.</div>';
+  const dishes = RECIPES.filter(r => state.dishes[r.id] > 0).map(r => sellRow('dish', r.id, r.name, state.dishes[r.id], m));
+  $('dishSell').innerHTML = dishes.join('') || '<div class="empty">Готовых блюд нет.</div>';
+  $('recipeList').innerHTML = RECIPES.map(r => {
+    const st = recipeStatus(state, r);
+    const where = [...new Set(Object.keys(r.needs).map(f => WATERS[FISH[f].water].name.toLowerCase()))].join(' и ');
+    const needs = Object.entries(r.needs).map(([f, n]) => FISH[f].name + (n > 1 ? ' ×' + n : '')).join(', ');
+    const action = st === 'known' ? '<span class="done">Изучен</span>'
+      : st === 'locked' ? `<span class="done">С кулинарии ${r.skill}</span>`
+      : `<button class="btn" id="buy-${r.id}" data-buy="${r.id}" ${st === 'poor' || !m.present ? 'disabled' : ''}>Купить за ${r.cost}</button>`;
+    return `<div class="card"><div class="row"><span class="card-name">${r.name}</span>${action}</div>
+      <span class="meta">${needs} · ${where}. В дорогу +${r.power} силы${r.eat ? ', еда: ' + EAT_TEXT[r.eat] : ''}. Цена ${r.sell}</span></div>`;
+  }).join('');
+  $('gearList').innerHTML = GEAR.map(g => {
+    const own = state.gear.includes(g.id);
+    return `<div class="card"><div class="row"><span class="card-name">${g.name}</span>${own ? '<span class="done">Куплено</span>'
+      : `<button class="btn" id="gear-${g.id}" data-gear="${g.id}" ${state.gold < g.cost || !m.present ? 'disabled' : ''}>Купить за ${g.cost}</button>`}</div>
+      <span class="meta">${g.text}</span></div>`;
+  }).join('');
+}
+function renderBadges(){
+  const m = merchant(state);
+  const cookable = RECIPES.some(r => state.known.includes(r.id) && canCook(state, r));
+  const set = (id, name, on, title) => $(id).innerHTML = name + (on ? `<span class="badge" title="${title}"></span>` : '');
+  set('tabbtn-home', 'Дом', !!state.report || state.armor.broken || state.trophies.length > 0, 'Дома есть дела');
+  set('tabbtn-cook', 'Кухня', cookable, 'Есть что приготовить');
+  set('tabbtn-map', 'Карта', state.hero.status === 'home' && !state.won, 'Герой готов к вылазке');
+  set('tabbtn-market', 'Торговец', m.present, 'Торговец здесь');
+}
+function renderAll(){ renderHud(); renderHome(); renderWaters(); renderWaterInfo(); renderBag(); renderCook(); renderMap(); renderMarket(); renderBadges(); }
+
+const TABS = ['home', 'fish', 'cook', 'map', 'market'];
+function showTab(t){
+  if (tab === 'fish' && t !== 'fish') stopFishing();
+  tab = t;
+  for (const id of TABS){
+    $('tab-' + id).hidden = id !== t;
+    $('tabbtn-' + id).setAttribute('aria-selected', id === t);
+  }
+  renderAll();
+}
+
+/* ---------- действия ---------- */
+function doCook(id){
+  const res = cook(state, recipeById(id));
+  if (!res) return;
+  sfx.cook(); buzz(10);
+  if (res.up){
+    sfx.up(); plusOne('cookBox');
+    toast(`Готово. Кулинария выросла до ${state.cooking}`);
+  } else {
+    toast(res.color === 'grey' || state.cooking >= MAX_SKILL ? 'Готово. Этот рецепт кулинарию уже не растит' : 'Готово. В этот раз кулинария не выросла');
+  }
+  save(); renderAll();
+  if (res.up) pop($('cookNum'));
+}
+function doEat(id){
+  const r = recipeById(id);
+  if (!eat(state, id)) return;
+  sfx.eat(); buzz(12); toast(`${r.name}: ${EAT_TEXT[r.eat]}`);
+  save(); renderAll();
+}
+function doSell(spec){
+  const [kind, id, n] = spec.split(':');
+  const sum = sell(state, kind, id, n === 'all' ? Infinity : 1);
+  if (!sum) return;
+  sfx.coin(); buzz(10); toast(`+${sum} золота`);
+  save(); renderAll(); pop($('goldNum'));
+}
+function doBuy(id){
+  const r = recipeById(id);
+  if (!buyRecipe(state, r)) return;
+  sfx.buy(); buzz([15, 30, 15]); toast(`Рецепт изучен: ${r.name}`);
+  save(); renderAll(); pop($('goldNum'));
+}
+function doGear(id){
+  const g = GEAR.find(x => x.id === id);
+  if (!buyGear(state, g)) return;
+  sfx.buy(); buzz([15, 30, 15]); toast(`${g.name}: ${g.text.toLowerCase()}`);
+  save(); renderAll(); pop($('goldNum'));
+}
+function doDepart(id){
+  if (!depart(state, id)) return;
+  sfx.go(); buzz([15, 30, 15]); toast(`Герой ушёл. Вернётся через ${clock(state.hero.until - Date.now())}`);
+  save(); renderAll();
+}
+function doDust(name){
+  const got = disenchant(state, name === '*' ? null : name);
+  if (!got) return;
+  sfx.dust(); buzz(10); toast(`+${got} пыли`);
+  save(); renderAll();
+}
+function doEnchant(what){
+  if (!enchant(state, what)) return;
+  sfx.buy(); buzz([15, 30, 15]); toast(what === 'armor' ? `Броня зачарована: сила +1` : 'Удочка зачарована: подсекать стало проще');
+  save(); renderAll();
+}
+function doRepair(how){
+  if (!repair(state, how)) return;
+  sfx.cook(); buzz(15); toast('Броня починена и снова даёт силу');
+  save(); renderAll(); if (how === 'gold') pop($('goldNum'));
+}
+function doSet(what){
+  const box = $('settings'), now = Date.now();
+  if (what === 'sound'){ state.sound = !state.sound; save(); renderHome(); if (state.sound) sfx.coin(); }
+  else if (what === 'refill'){ state.energy = Math.max(state.energy, MAX_ENERGY); save(); renderAll(); toast('Забросы восстановлены. Кнопка только для теста'); }
+  else if (what === 'skip'){
+    if (state.hero.status === 'home') return toast('Герой и так дома');
+    state.hero.until = now; tick();
+  }
+  else if (what === 'call'){ callMerchant(state, now); save(); renderAll(); toast('Торговец пришёл. Кнопка только для теста'); }
+  else if (what === 'reset'){
+    box.dataset.open = '1';
+    box.innerHTML = 'Весь прогресс сотрётся. <button class="btn" id="set-reset-yes" data-set="reset-yes">Стереть</button><button class="btn quiet" id="set-reset-no" data-set="reset-no">Отмена</button>';
+  }
+  else {
+    delete box.dataset.open;
+    if (what === 'reset-yes'){ const sound = state.sound; state = newState(); state.sound = sound; sel = null; save(); stopFishing(); showTab('home'); toast('Начинаем серию заново'); }
+    else renderHome();
+  }
+}
+
+$('water').addEventListener('pointerdown', e => { e.preventDefault(); tapWater(); });
+$('water').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat){ e.preventDefault(); tapWater(); } });
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const d = b.dataset;
+  if (d.tab) showTab(d.tab);
+  else if (d.cook) doCook(d.cook);
+  else if (d.eat) doEat(d.eat);
+  else if (d.sell) doSell(d.sell);
+  else if (d.buy) doBuy(d.buy);
+  else if (d.gear) doGear(d.gear);
+  else if (d.set) doSet(d.set);
+  else if (d.depart) doDepart(d.depart);
+  else if (d.dust) doDust(d.dust);
+  else if (d.ench) doEnchant(d.ench);
+  else if (d.repair) doRepair(d.repair);
+  else if (d.report){ state.report = null; save(); renderAll(); }
+  else if (d.slot){ slotSel = d.slot; renderHome(); }
+  else if (d.cell){ sel = d.cell; renderMap(); }
+  else if (d.pack){ if (state.pack.length < PACK_SIZE && packLeft(state, d.pack) > 0){ state.pack.push(d.pack); save(); renderMap(); } }
+  else if (d.unpack){ state.pack.splice(+d.unpack, 1); save(); renderMap(); }
+  else if (d.water){ state.water = d.water; stopFishing(); save(); renderAll(); }
+});
+
+/* раз в полсекунды: возврат забросов, герой, торговец и таймеры */
+let lastEnergy = null, lastMerchant = null;
+function tick(){
+  const now = Date.now();
+  let ev, changed = false;
+  while ((ev = resolveHero(state, now))){
+    changed = true;
+    if (ev === 'win'){ sfx.catch(true); toast('Герой вернулся с добычей. Загляни домой'); }
+    else if (ev === 'death'){ sfx.miss(); buzz([60, 40, 60]); toast('Герой погиб. Броня сломана, бафы сброшены'); }
+    else if (ev === 'retreat'){ sfx.miss(); toast('Герой отступил и вернулся ни с чем'); }
+    else toast('Герой снова дома');
+  }
+  const m = merchant(state, now);
+  if (lastMerchant !== null && m.present !== lastMerchant){
+    changed = true;
+    toast(m.present ? `Пришёл торговец. Платит вдвое за: ${m.wants.map(goodName).join(' и ')}` : 'Торговец ушёл');
+    if (m.present) sfx.coin();
+  }
+  lastMerchant = m.present;
+  if (changed){ save(); renderAll(); }
+  renderWaterInfo();
+  if (state.energy !== lastEnergy){ lastEnergy = state.energy; save(); }
+  $('goal').textContent = goalText(now);
+  const line = $('heroLine'); if (line) line.textContent = heroStatus(now);
+  const bar = $('heroBar'), h = state.hero;
+  if (bar && h.until) bar.style.width = Math.min(100, (now - h.start) / (h.until - h.start) * 100) + '%';
+  const mt = $('merchantTimer'); if (mt) mt.textContent = clock((m.present ? m.endsAt : m.nextAt) - now);
+}
+
+function start(data){
+  const saved = (data && data.state) || load(), fresh = newState();
+  state = Object.assign(fresh, saved);
+  state.buffs = Object.assign({skill:0, luck:0}, state.buffs);
+  state.armor = Object.assign({broken:false, ench:0}, state.armor);
+  state.cur = {bonus:0, luck:false};
+  if (!WATERS[state.water] || !waterOpen(state, state.water)) state.water = 'pond';
+  $('energyMax').textContent = MAX_ENERGY;
+  renderAll(); tick();
+  setInterval(tick, 500);
+}
+start();
+</script>
+</body>
+</html>
